@@ -1,0 +1,33 @@
+PRIVATE &ppd
+&ppd=OS.PSD()
+
+cd.do attach_core_m7_0.cmm
+
+v gProgramAttributes = 0x400
+Var.NEWLOCAL int \local_test
+VAR.Addwatch testStatus
+
+LOCAL &yes
+DIALOG.YESNO "Do you want to proceed and directly check if HSE FW feature flag in UTEST is enabled?"
+ENTRY &yes
+//user wants to debug the code, do not proceed from script
+IF &yes
+(
+    go
+    wait 2s
+    break
+    v \local_test = ((testStatus>>11)&0x01)
+    VAR.IF ( (gsrvResponse == 0x55A5AA33) && (\local_test == 1) )
+    (
+        Var.AddWatch testStatus
+        DIALOG.MESSAGE "HSE FW usage flag enabled successfully."
+    )
+    VAR.IF ( (gsrvResponse != 0x55A5AA33) && (\local_test == 1) )
+    (
+        DIALOG.MESSAGE "HSE FW usage flag already enabled."
+    )
+    VAR.IF ( (gsrvResponse != 0x55A5AA33) && (\local_test == 0) )
+    (
+        DIALOG.MESSAGE "HSE FW usage flag not enabled."
+    )
+)

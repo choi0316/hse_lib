@@ -1,0 +1,17 @@
+cd.do attach_core_m7_0.cmm
+
+IF ("&CONFIG"=="GHS")
+(
+    IF OS.FILE.EXIST(..\Projects\GHS\SecureBootApp\bin\secure_boot_app.elf)==TRUE()
+        data.load.elf "..\Projects\GHS\SecureBootApp\bin\secure_boot_app.elf" /nocode
+    ELSE
+        DIALOG.MESSAGE "Symbols not present. Please build secure boot applcation project for symbol mapping."
+)
+ELSE
+(
+    IF OS.FILE.EXIST(..\Projects\S32DS\SecureBootApp\Debug_FLASH\secure_boot_app.elf)==TRUE()
+        data.load.elf "..\Projects\S32DS\SecureBootApp\Debug_FLASH\secure_boot_app.elf" /nocode
+    ELSE
+        DIALOG.MESSAGE "Symbols not present. Please build secure boot applcation project for symbol mapping."
+)
+ENDDO

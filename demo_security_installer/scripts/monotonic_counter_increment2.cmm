@@ -1,0 +1,141 @@
+
+; @file      monotonic_counter.cmm
+; @copyright 2020,NXP Semiconductors Confidential Proprietary, All Rights Reserved.
+; @version   0.2
+
+PRIVATE &ppd
+&ppd=OS.PSD()
+
+Var.DelWatch
+;VAR.Addwatch testStatus
+Var.Addwatch MonotonicCntIncrementValue
+
+DIALOG
+(
+    HEADER "Monotonic Counter Incrementing"
+    POS 0. 1. 50. 1.
+    LINE "1. Double click on 'MonotonicCntIncrementValue' in Watch window "
+
+    POS 0. 2. 30. 1.
+    LINE "2. Enter value to be increment  "
+    POS 0. 3. 30. 1.
+    LINE "3. All 4 bytes values are Valid "
+    POS 2. 4. 40. 1.
+    LINE "Example 1 (HEX): MonotonicCntIncrementValue = 0x200 "
+
+    POS 2. 5. 40. 1.
+    LINE "Example 2 (DEC): MonotonicCntIncrementValue = 64 "
+
+    POS 3. 8. 10. 1.
+    DEFBUTTON "Increment" "CONTinue"
+    POS 3. 10. 10. 1.
+    BUTTON    "Back" "GOTO ReturnCode"
+
+    CLOSE "GOTO cancel"
+)
+
+
+start:
+    STOP
+    GOTO SUB_FILL_DATA
+
+
+ReturnCode:
+    DIALOG.END
+        BREAK
+        v allTestExecuted = 1
+        v monotonic_cnt_select = MONOTONIC_CNT_NOT_SELECTED
+        v gProgramAttributes = NO_ATTRIBUTE_PROGRAMMED
+        v gRunExampleTest = 0
+    do monotonic_counter.cmm
+;    DIALOG.OK "CLOSED"
+;    STOP
+    ENDDO
+
+cancel:
+    DIALOG.END
+    STOP
+    ENDDO
+
+
+dialog_ok_1:
+
+    IF DIALOG.BOOLEAN(OptionIncM.1)
+    (
+        v MonotonicCntIncrementValue = 1
+        GOSUB SUB_FILL_DATA
+    )
+    ELSE IF DIALOG.BOOLEAN(OptionIncM.2)
+    (
+        v MonotonicCntIncrementValue = 10
+        GOSUB SUB_FILL_DATA
+    )
+    ELSE IF DIALOG.BOOLEAN(OptionIncM.3)
+    (
+        v MonotonicCntIncrementValue = 100
+        GOSUB SUB_FILL_DATA
+    )
+    ELSE IF DIALOG.BOOLEAN(OptionIncM.4)
+    (
+        v MonotonicCntIncrementValue = 1000
+        GOSUB SUB_FILL_DATA
+    )
+    ELSE IF DIALOG.BOOLEAN(OptionIncM.5)
+    (
+        v MonotonicCntIncrementValue = 10000
+        GOSUB SUB_FILL_DATA
+    )
+    ELSE IF DIALOG.BOOLEAN(OptionIncM.6)
+    (
+        v MonotonicCntIncrementValue = 100000
+        GOSUB SUB_FILL_DATA
+    )
+    ELSE IF DIALOG.BOOLEAN(OptionIncM.7)
+    (
+        v MonotonicCntIncrementValue = 1000000
+        GOSUB SUB_FILL_DATA
+    )
+    ELSE IF DIALOG.BOOLEAN(OptionIncM.8)
+    (
+        v MonotonicCntIncrementValue = 10000000
+        GOSUB SUB_FILL_DATA
+    )
+    ELSE IF DIALOG.BOOLEAN(OptionIncM.9)
+    (
+        v MonotonicCntIncrementValue = 20000000
+        GOSUB SUB_FILL_DATA
+    )
+    ELSE
+    (
+        DIALOG.OK "Invalid Option. Please Restart"
+        STOP
+        ENDDO
+    )
+
+
+    Var.PRINT "MonotonicCnt Response " MonotonicCntResponse
+    do monotonic_counter.cmm
+
+;    DIALOG.OK "Incremented"
+;    STOP
+    ENDDO
+
+SUB_FILL_DATA:
+    DIALOG.END
+    BREAK
+    v monotonic_cnt_select = MONOTONIC_CNT_INCREMENT
+    v gProgramAttributes = MONOTONIC_COUNTER
+    v gRunExampleTest = 1
+    GO
+    wait 4s
+    break
+    v allTestExecuted = 1
+    v monotonic_cnt_select = MONOTONIC_CNT_NOT_SELECTED
+    v gProgramAttributes = NO_ATTRIBUTE_PROGRAMMED
+    v gRunExampleTest = 0
+    v MonotonicCntIncrementValue = 0
+    GO
+    do monotonic_counter.cmm
+
+
+ENDDO

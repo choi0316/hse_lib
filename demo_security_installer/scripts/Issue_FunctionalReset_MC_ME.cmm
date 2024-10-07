@@ -1,0 +1,45 @@
+
+&MC_ME_REGS_BASE="sd:0x402DC000"
+&MC_ME_MODE_CONF=&MC_ME_REGS_BASE+0x4
+&MC_ME_MODE_UPD=&MC_ME_REGS_BASE+0x8
+; On error continue because the destructive reset shows error
+GLOBALON ERROR CONTinue
+;System.Option EnReset OFF
+;GOSUB IssueDestructiveReset
+GOSUB IssueFunctionalReset
+wait 200ms
+ENDDO
+
+IssueFunctionalReset:
+(
+    ;Issue Functional Reset via MC ME mode config
+
+    Data.Set &MC_ME_MODE_CONF %Long 0x00000002
+    Data.Set &MC_ME_MODE_UPD %Long  0x00000001
+
+    GOSUB IssueModeTransition
+
+    RETURN
+)
+
+IssueDestructiveReset:
+(
+    ;Issue Functional Reset via MC ME mode config
+
+    Data.Set &MC_ME_MODE_CONF %Long 0x00000001
+    Data.Set &MC_ME_MODE_UPD %Long  0x00000001
+
+    GOSUB IssueModeTransition
+
+    RETURN
+)
+
+IssueModeTransition:
+(
+    &MC_ME_CTL_KEY=&MC_ME_REGS_BASE+0x0
+    ; Mode Transition
+    Data.Set &MC_ME_CTL_KEY %Long 0x00005AF0    ; MC_ME.MC_ME_CTL_KEY.R
+    Data.Set &MC_ME_CTL_KEY %Long 0x0000A50F    ; MC_ME.MC_ME_CTL_KEY.R
+    RETURN
+)
+

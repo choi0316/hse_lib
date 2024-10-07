@@ -1,0 +1,90 @@
+; --------------------------------------------------------------------------------
+; @file      menu.cmm
+; @copyright 2021,NXP Semiconductors Confidential Proprietary, All Rights Reserved.
+; @version   0.3
+; --------------------------------------------------------------------------------
+
+GLOBAL &CONFIG
+GLOBAL &app_device
+GLOBAL &SOC_ID
+GLOBAL &FlashDriver
+GLOBAL &fwtype
+
+;Default Configuration is GHS only
+IF ("&CONFIG"=="")
+(
+    &CONFIG="GHS"
+)
+
+DIALOG
+(&+
+    HEADER "BUILD CONFIGURATION DETAILS"
+    POS 0. 0. 50. 3.
+    BOX "Build Configuration Details"
+    POS 1. 1. 10. 1.
+    DEFBUTTON "GHS"
+    (
+        &CONFIG="GHS"
+        Dialog.Disable UpdateBox
+    )
+
+    POS 35. 1. 10. 1.
+    DEFBUTTON "S32DS"
+    (
+        &CONFIG="S32DS"
+        Dialog.Disable UpdateBox
+    )
+
+    POS 0. 2. 50. 1.
+    LINE ""
+
+    POS 0. 3. 50. 3.
+    BOX "Current Build Configuration Details"
+
+    POS 10. 4. 30. 1.
+UpdateBox:    INFOTEXT "Active Configuraiton: &CONFIG" White RAised
+
+    POS 0. 6. 50. 4.75
+    BOX "Important NOTE:"
+
+    POS 1. 7. 40. 3.
+    INFOTEXT "Please follow below steps before running any demo test."+CONV.CHAR(10.)+"1)Compile demo app and Secure Boot App."+CONV.CHAR(10.)+"2)Load demo app binaries from User option."
+
+    POS 35. 10.5 10. 1.
+    DEFBUTTON "CLOSE"
+    (
+        DIALOG.END
+    )
+)
+
+&fwtype="STANDARD"
+
+PRIVATE &ppd1
+&ppd1=OS.PPD()
+CD &ppd1
+
+MENU.Reset
+;button added for firmware installation
+MENU.AddMenu "Install HSE FW" "CD.DO hse_fw_installation.cmm"
+;button added for programming HSE FW feature flag
+MENU.AddMenu "Enable HSE FW usage" "CD.DO program_hsefwusageflag.cmm"
+;button added for checking firmware installed status
+MENU.AddMenu "FW install status" "CD.DO check_fw_install_status.cmm"
+
+;button added for flashing demo app
+MENU.AddMenu "Load demo app binary" "CD.DO program_app.cmm"
+;button added for loading application symbols
+MENU.AddMenu "Load demo app symbols" "CD.DO load_app_symbols.cmm"
+;Button added for executing HSE FW features
+MENU.AddMenu "Run demo tests" "CD.DO run_all_tests.cmm"
+;button added for issuing functional reset
+MENU.AddMenu "Functional Reset" "CD.DO Issue_FunctionalReset_MC_ME.cmm"
+;button added for issuing functional reset
+MENU.AddMenu "Secure Boot Status" "CD.DO check_secure_boot_app_status.cmm"
+;button added for erasing keys
+MENU.AddMenu "Erase NVM Data" "CD.DO EraseKeys.cmm"
+;button added for erasing keys
+MENU.AddMenu "Debug Authorization" "CD.DO debug_authorization.cmm"
+;button added for sbaf update
+MENU.AddMenu "SBAF Update" "CD.DO sbaf_update.cmm"
+ENDDO

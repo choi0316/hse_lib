@@ -1,0 +1,74 @@
+v gProgramAttributes = 16
+v gRunExampleTest = 1
+v write_attr=1
+LOCAL &yes
+DIALOG.MESSAGE "Please note, this is one-time programmable area, ADKP key shall be programmed before programming updating debug auth mode."
+
+dialog_to_update_LC:
+DIALOG
+(
+    HEADER "Advance LC to:"
+    POS 1. 1. 20. 1.
+    OptionE.1: CHOOSEBOX "OEM_PROD" " "
+    POS 1. 2. 20. 1.
+    OptionE.2: CHOOSEBOX "IN_FIELD" " "
+
+    POS 4. 4. 10. 1.
+    DEFBUTTON "Ok" "CONTinue"
+    POS 4. 5. 10. 1.
+    BUTTON    "Cancel" "GOTO dialog_3"
+
+    CLOSE "GOTO cancel"
+)
+
+start:
+    STOP
+    GOTO dialog_ok_3
+    DEFBUTTON "OK" "Continue"
+
+cancel:
+    DIALOG.END
+    STOP
+    ENDDO
+
+dialog_3:
+    DIALOG.END
+    ENDDO
+STOP
+
+; Sequence followed in each of the options
+;1) Previous dialog box will be closed.
+;2) variables in cmm will be set in order for demo app to execute that particular example
+;3) User will be prompted for the following
+;   a) if it wants to check the output of the request or wants to debug the code.
+;   b) In case of direct output, user will be directly informed of the response from HSE to app.
+;   c) In latter case, code will stop at while(!gRunExampleTest) in main function and user can debug from that point onwards.
+;   Following is the description for each variables
+; gRunExampleTest:      global variable for selecting which example feature to run
+; gProgramAttributes:   in case of gRunExampleTest = 1 which means Attribute Programming, gProgramAttributes variable selects which
+;                       attribute has to be executed as given above.(Line No 38)
+
+;add response from HSE in Watch list
+
+dialog_ok_3:
+    IF DIALOG.BOOLEAN(OptionE.1)
+    (
+      dialog.end
+        v programLC = 8
+        v \advanceLC_requested=1
+    )
+    ELSE IF DIALOG.BOOLEAN(OptionE.2)
+    (
+      dialog.end
+       v programLC = 16
+       v \advanceLC_requested=1
+    )
+    ELSE
+    (
+        DIALOG.OK "Please select a valid option"
+        dialog.end
+        goto dialog_to_update_LC
+        v \advanceLC_requested=0
+    )
+
+ENDDO

@@ -1,0 +1,58 @@
+cd.do load_app_symbols.cmm
+LOCAL &value &ivt_header &socid
+Var.NEWLOCAL char \init_status_byte
+
+;wait time increased
+go
+wait 500ms
+break
+
+; Bit 24 of FSR
+&hse_status_init_ok_addr=0x4038C107
+&hse_status_init_ok_value=Data.byte(SD:&hse_status_init_ok_addr)
+
+&dcm_otaa=((Data.long(SD:0x402ac000)>>10)&0x1)
+&dcm_otaa_ex=((Data.long(SD:0x402ac000)>>12)&0x1)
+&ivt_header=Data.long(SD:0x00400000)
+&socid=Data.long(SD:0x4039C020)
+&s32k396=((&socid&0xFF00)==0x0F00)
+&s32k358=((&socid&0xFF00)==0x0E00)
+
+
+IF &s32k396==TRUE()
+(
+    &ota_e_status=&dcm_otaa_ex
+)
+ELSE IF &s32k358==TRUE()
+(
+    &ota_e_status=(&dcm_otaa_ex|&dcm_otaa)
+)
+ELSE
+(
+    &ota_e_status=&dcm_otaa
+)
+
+Var.Assign \init_status_byte=&hse_status_init_ok_value
+Var.Assign \init_status_byte=(\init_status_byte)&0x1
+
+VAR.IF ( 0x1 == \init_status_byte )
+(
+    var.if (0x1 == &ota_e_status)
+        DIALOG.MESSAGE "AB SWAP HSE FW installed."
+    else
+        DIALOG.MESSAGE "Full Memory HSE FW installed."
+    ;print hse firmware version only when ivt is present
+    VAR.IF (0x5AA55AA5 == &ivt_header)
+    (
+        Var.AddWatch %Hex gHseFwVersion
+    )
+)
+VAR.IF (0x0 == \init_status_byte)
+(
+    var.if (0x1 == &ota_e_status)
+        DIALOG.MESSAGE "AB SWAP Device. HSE FW not installed."
+    else
+        DIALOG.MESSAGE "Full Mem Device. HSE FW not installed."
+)
+
+data.dump &hse_status_init_ok_addr++0x1

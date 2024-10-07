@@ -1,0 +1,82 @@
+;the script prompts user for selecting update streaming sizes
+
+
+streaming_mode_value:
+DIALOG
+(
+    HEADER "Streaming Size"
+    POS 0. 1. 20. 1.
+    LINE "Options for Streaming Size: "
+    POS 6. 2. 10. 1.
+    OptionX.1: CHOOSEBOX "64 Bytes" ""
+    POS 6. 3. 10. 1.
+    OptionX.2: CHOOSEBOX "128 Bytes" " "
+    POS 6. 4. 10. 1.
+    OptionX.3: CHOOSEBOX "256 Bytes" " "
+    POS 6. 5. 10. 1.
+    OptionX.4: CHOOSEBOX "512 Bytes" " "
+    POS 6. 6. 10. 1.
+    OptionX.5: CHOOSEBOX "1024 Bytes" " "
+
+
+    POS 5. 8. 7. 1.
+    DEFBUTTON "OK" "CONTinue"
+    POS 5. 9. 7. 1.
+    BUTTON    "CANCEL" "GOTO cancel"
+
+    CLOSE "GOTO cancel"
+)
+
+start:
+    STOP
+    GOTO dialog_ok_2
+    DEFBUTTON "OK" "Continue"
+
+cancel:
+    DIALOG.END
+    ENDDO
+    STOP
+
+; Sequence followed in each of the options
+;1) Previous dialog box will be closed.
+;2) variables in cmm will be set in order for demo app to execute that particular example
+;3) User will be prompted for the following
+;   a) if it wants to check the output of the request or wants to debug the code.
+;   b) In case of direct output, user will be directly informed of the response from HSE to app.
+;   c) In latter case, code will stop at while(!gRunExampleTest) in main function and user can debug from that point onwards.
+;   Following is the description for each variables
+; gRunExampleTest:      global variable for selecting which example feature to run
+; gProgramAttributes:   in case of gRunExampleTest = 1 which means Attribute Programming, gProgramAttributes variable selects which
+;                       attribute has to be executed as given above.(Line No 23)
+
+;add response from HSE in Watch list
+
+dialog_ok_2:
+    IF DIALOG.BOOLEAN(OptionX.1)
+    (
+        v factor=1
+    )
+    ELSE IF DIALOG.BOOLEAN(OptionX.2)
+    (
+        v factor=2
+    )
+    ELSE IF DIALOG.BOOLEAN(OptionX.3)
+    (
+        v factor=4
+    )
+    ELSE IF DIALOG.BOOLEAN(OptionX.4)
+    (
+        v factor=8
+    )
+    ELSE IF DIALOG.BOOLEAN(OptionX.5)
+    (
+        v factor=16
+    )
+    ELSE
+    (
+        DIALOG.OK "Please select a valid option."
+        DIALOG.END
+        goto streaming_mode_value
+    )
+    DIALOG.END
+ENDDO

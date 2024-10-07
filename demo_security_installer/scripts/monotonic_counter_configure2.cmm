@@ -1,0 +1,80 @@
+
+; @file      monotonic_counter.cmm
+; @copyright 2020,NXP Semiconductors Confidential Proprietary, All Rights Reserved.
+; @version   0.2
+
+PRIVATE &ppd
+&ppd=OS.PSD()
+
+
+Var.DelWatch
+Var.Addwatch MonotonicCntRPBitSize
+
+
+DIALOG
+(
+    HEADER "Monotonic Counter Configuration"
+    POS 0. 1. 50. 1.
+    LINE " Double click on MonotonicCntRPBitSize in watch window "
+
+    POS 0. 2. 50. 1.
+    LINE " Enter Bit Size of Roll Over Protection Part "
+    POS 0. 3. 50. 1.
+    LINE " Valid range is: 32 to 64 and must be multiple of 8 "
+
+    POS 2. 4. 40. 1.
+    LINE "Example 1 (HEX): MonotonicCntRPBitSize = 0x10 "
+
+    POS 2. 5. 40. 1.
+    LINE "Example 2 (DEC): MonotonicCntRPBitSize = 15 "
+
+    POS 20. 7. 10. 1.
+    DEFBUTTON "Continue" "Continue"
+    POS 20. 8. 10. 1.
+    BUTTON    "Back" "GOTO ReturnCode"
+
+    CLOSE "GOTO cancel"
+)
+
+start:
+    STOP
+    print "In Progress..."
+    GOTO SUB_FILL_CONFIGURE
+
+ReturnCode:
+    DIALOG.END
+    BREAK
+        v allTestExecuted = 1
+        v monotonic_cnt_select = MONOTONIC_CNT_NOT_SELECTED
+        v gProgramAttributes = NO_ATTRIBUTE_PROGRAMMED
+        v gRunExampleTest = 0
+    DO monotonic_counter.cmm
+
+cancel:
+    DIALOG.END
+    STOP
+    ENDDO
+
+
+
+
+SUB_FILL_CONFIGURE:
+
+    DIALOG.END
+    BREAK
+    v monotonic_cnt_select = MONOTONIC_CNT_CONFIGURE
+    v gProgramAttributes = MONOTONIC_COUNTER
+    v gRunExampleTest = 1
+    v allTestExecuted = 1
+    GO
+    wait 5s
+    BREAK
+
+    v monotonic_cnt_select = MONOTONIC_CNT_NOT_SELECTED
+    v gProgramAttributes = NO_ATTRIBUTE_PROGRAMMED
+    v gRunExampleTest = 0
+    print " configured ..."
+
+    do monotonic_counter.cmm
+
+ENDDO

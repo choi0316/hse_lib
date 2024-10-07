@@ -1,0 +1,21 @@
+cd.do attach_core_m7_0.cmm
+
+mode
+
+Symbol.Reset
+
+IF ("&CONFIG"=="GHS")
+(
+    IF OS.FILE.EXIST(..\Projects\GHS\demo_app\bin\demo_app.elf)==TRUE()
+        data.load.elf "..\Projects\GHS\demo_app\bin\demo_app.elf" /nocode
+    ELSE
+        DIALOG.MESSAGE "symbols not present. Please build demo app Multi GHS project for symbol mapping."
+)
+ELSE
+(
+    IF OS.FILE.EXIST(..\Projects\S32DS\demo_app\S32K3xx\bin\&SOC_ID\S32K3XX_demo_app.elf)==TRUE()
+        data.load.elf "..\Projects\S32DS\demo_app\S32K3xx\bin\&SOC_ID\S32K3XX_demo_app.elf" /nocode
+    ELSE
+        DIALOG.MESSAGE "symbols not present. Please build respective device configuration from demo app of S32DS project for symbol mapping."
+)
+ENDDO

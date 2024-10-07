@@ -1,0 +1,271 @@
+;load demo app symbols
+cd.do load_app_symbols.cmm
+
+GLOBAL &FWUPDATE &type_of_hse_image &ota_e_update &fw_vrsn_rsrvd &activate_passive_block &continue_test &FW_VERSION &fwType
+
+GLOBAL &DATA_COPIED
+VAR.NEWGLOBAL int \local_test
+VAR.NEWGLOBAL char \load_image
+run_all_test:
+&type_of_hse_image = 0
+&PROGRAMMING_AVAILBLE_ATTR_SUCCESS = 0x00020000
+&DATA_TRANSFER_SUCCESSFUL = 0x00080000
+&ota_e_update = 0
+&fw_vrsn_rsrvd = 0
+&activate_passive_block = 0
+&continue_test = 1
+&FW_VERSION = (gHseFwVersion+1);SD:0x20407000;
+&DATA_COPIED = 0
+&fw_type = Data.Word(gHseFwVersion+2)
+break
+go
+wait 1s
+break
+; Below are the examples that the user can execute via this demonstration
+DIALOG
+(
+    HEADER "Test Configuration"
+    POS 0. 1. 20. 1.
+    LINE "Select: "
+    POS 1. 2. 25. 1.
+    OptionA.1: CHOOSEBOX "HSE Attribute Programming" ""
+    POS 1. 3. 25. 1.
+    OptionA.2: CHOOSEBOX "HSE Cryptographic Services" ""
+    POS 1. 4. 20. 1.
+    OptionA.3: CHOOSEBOX "HSE FW Update" ""
+    POS 1. 5. 20. 1.
+    OptionA.4: CHOOSEBOX "Secure Boot" ""
+    POS 1. 6. 30. 1.
+    OptionA.5: CHOOSEBOX "Monotonic Counter Feature" ""
+    POS 1. 7. 30. 1.
+    OptionA.6: CHOOSEBOX "SHE Services" ""
+    POS 1. 8. 30. 1.
+    DEFBUTTON "OK" "CONTinue"
+    POS 8. 13. 10. 1.
+    BUTTON    "Cancel" "GOTO cancel"
+
+    CLOSE "GOTO cancel"
+)
+
+
+start:
+    STOP
+    GOTO dialog_ok
+    DEFBUTTON "OK" "Continue"
+
+cancel:
+    DIALOG.END
+    STOP
+    ENDDO
+
+;gRunExampleTest variable indicates which example feature to run,
+;for ex, if gRunExampleTest is set to 1, it will run Attribute programming examples
+
+dialog_ok:
+    VAR.DelWatch FastCmacGenerateTime
+    VAR.DelWatch FastCmacVerifyTime
+    VAR.Delwatch gCryptoServicesExecuted
+    VAR.Delwatch testStatus
+    VAR.Delwatch gOldHseFwVersion
+    VAR.Delwatch gHseFwVersion
+    VAR.DELWATCH fwversion
+    &FWUPDATE = 0
+    IF DIALOG.BOOLEAN(OptionA.1)
+    (
+        ;Close previous dialog and then call sub-script which offers multiple attribute programming
+        DIALOG.END
+        do attribute_programming.cmm
+    )
+    ELSE IF DIALOG.BOOLEAN(OptionA.2)
+    (
+        DIALOG.END
+        v \local_test = 0
+        v gRunExampleTest = 2
+        LOCAL &yes
+        DIALOG.YESNO "Do you want to proceed and directly check if all Cryptographic services were executed?"
+        ENTRY &yes
+        IF &yes
+        (
+            ;wait for sometime for application to run all cryptographic services
+            ;as more demo examples are added, so time is increased from 3s to 13 secs, decreased to 5s for VKMS K311
+            go
+            wait 5.s
+            break
+
+            VAR.Addwatch gCryptoServicesExecuted
+            v \local_test = (testStatus >> 2)&0x1
+
+            VAR.IF (1 == \local_test)
+            (
+                DIALOG.MESSAGE "All cryptographic services were executed successfully."
+            )
+            ELSE
+            (
+                DIALOG.MESSAGE "All Cryptographic services were not executed completely. Please check the input."
+                ;this will check all the crypto services that were executed
+                VAR.IF (0x1 != (0x1 & gCryptoServicesExecuted))
+                (
+                    DIALOG.MESSAGE "AES keys related tests were not successful."
+                )
+                VAR.IF (0x2 != (0x2 & gCryptoServicesExecuted))
+                (
+                    DIALOG.MESSAGE "HASH related tests were not successful."
+                )
+                ;VAR.IF (0x4 != (0x4 & gCryptoServicesExecuted))
+                ;(
+                ;    DIALOG.MESSAGE "ECC Keys related tests were not successful."
+                ;)
+                VAR.IF (0x8 != (0x8 & gCryptoServicesExecuted))
+                (
+                    DIALOG.MESSAGE "Session Keys related tests were not successful."
+                )
+                VAR.IF (0x10 != (0x10 & gCryptoServicesExecuted))
+                (
+                    DIALOG.MESSAGE "Fast Cmac Related Tests were not successful."
+                )
+                ;VAR.IF (0x20 != (0x20 & gCryptoServicesExecuted))
+                ;(
+                ;    DIALOG.MESSAGE "Burmester Desmedt Tests were not successful."
+                ;)
+                ;VAR.IF (0x40 != (0x40 & gCryptoServicesExecuted))
+                ;(
+                ;    DIALOG.MESSAGE "Sys Authorization related tests were not successful."
+                ;)
+                VAR.IF (0x80 != (0x80 & gCryptoServicesExecuted))
+                (
+                    DIALOG.MESSAGE "Update Keys related tests were not successful."
+                )
+                ;VAR.IF (0x100 != (0x100 & gCryptoServicesExecuted))
+                ;(
+                ;    DIALOG.MESSAGE "ECC export keys related tests were not successful."
+                ;)
+                ;VAR.IF (0x200 != (0x200 & gCryptoServicesExecuted))
+                ;(
+                ;    DIALOG.MESSAGE "ECC import public key and signature verification related tests were not successful."
+                ;)
+                VAR.IF (0x400 != (0x400 & gCryptoServicesExecuted))
+                (
+                    DIALOG.MESSAGE "Get Key info failed"
+                )   
+                ;VAR.IF (0x800 != (0x800 & gCryptoServicesExecuted))
+                ;(
+                ;    DIALOG.MESSAGE "RSA Examples failed"
+                ;)
+                VAR.IF (0x1000 != (0x1000 & gCryptoServicesExecuted))
+                (
+                    DIALOG.MESSAGE "AEAD Examples Failed"
+                )
+                ;VAR.IF (0x2000 != (0x2000 & gCryptoServicesExecuted))
+                ;(
+                ;    DIALOG.MESSAGE "Key derivation related tests were not successful."
+                ;)
+                ;VAR.IF (0x4000 != (0x4000 & gCryptoServicesExecuted))
+                ;(
+                ;            DIALOG.MESSAGE "Publish NVM keys RAM to flash related tests were not successful."
+                ;)
+
+            )
+            DIALOG.MESSAGE "Fast CMAC time in terms of STM clocks can be seen on watch window"
+            VAR.AddWatch FastCmacGenerateTime
+            VAR.AddWatch FastCmacVerifyTime
+        )
+        ELSE
+        (
+            &continue_test = 0
+        )
+    )
+    ELSE IF DIALOG.BOOLEAN(OptionA.3)
+    (
+        DIALOG.END
+fw_update:
+        DIALOG
+        (
+            POS 1. 1. 20. 1.
+            OptionQ.1: CHOOSEBOX "Update HSE FW" ""
+            POS 1. 2. 20. 1.
+            OptionQ.2: CHOOSEBOX "Activate Passive Block" ""
+
+            POS 4. 4. 10. 1.
+            DEFBUTTON "OK" "CONTinue"
+            POS 4. 5. 10. 1.
+            BUTTON    "Cancel" "GOTO cancel"
+
+            CLOSE "GOTO cancel"
+        )
+
+start:
+        STOP
+        GOTO execute_script
+        DEFBUTTON "OK" "Continue"
+
+execute_script:
+        &FWUPDATE = 1
+        IF DIALOG.BOOLEAN(OptionQ.1)
+        (
+            dialog.end
+            cd.do fw_update_mode_selection.cmm
+        )
+        ELSE IF DIALOG.BOOLEAN(OptionQ.2)
+        (
+            dialog.end
+            &activate_passive_block = 0
+            &type_of_hse_image = Data.byte(&FW_VERSION)
+            var.if (&type_of_hse_image == 0)
+            (
+            DIALOG.OK "This is not applicable for OTA-D FW update."
+            )
+            else
+            (
+            cd.do activate_passive_block.cmm
+            )
+        )
+        ELSE
+        (
+        dialog.end
+        dialog.ok "Please select a valid option"
+        goto fw_update
+        )
+    )
+    ELSE IF DIALOG.BOOLEAN(OptionA.4)
+    (
+        DIALOG.END
+        do secure_boot.cmm
+    )
+    ELSE IF DIALOG.BOOLEAN(OptionA.5)
+    (
+        ;Close previous dialog and then call sub-script which offers monotonic counter operation
+        DIALOG.END
+        do monotonic_counter.cmm
+    )
+    ELSE IF DIALOG.BOOLEAN(OptionA.6)
+    (
+        ;Close previous dialog and then call sub-script which offers monotonic counter operation
+        DIALOG.END
+        do she_services.cmm
+    )
+    ELSE
+    (
+        DIALOG.OK "No valid option selected."
+        DIALOG.END
+        goto run_all_test
+    )
+
+v allTestExecuted=1
+Var.IF (1 == &FWUPDATE)
+(
+    ;set test completed, TESTCOMPLETED memory section
+    Data.Set SD:0x2100DA2C %Byte 0x1
+    ;if OTA-D to OTA-E fw update, issue functional reset, fw udpate done at 0x422000
+    &ota_e_update = Data.byte(SD:0x422000)
+    &fw_vrsn_rsrvd = Data.byte(&FW_VERSION)
+
+    Var.If ( ((0xDB == &ota_e_update) && (0 == &fw_vrsn_rsrvd)) || (1 == &activate_passive_block) )
+    (
+        ;functional reset issued
+        cd.do Issue_FunctionalReset_MC_ME.cmm
+    )
+)
+
+Var.If (&continue_test == 1)
+    goto run_all_test
+ENDDO

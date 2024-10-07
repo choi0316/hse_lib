@@ -1,0 +1,34 @@
+;read HSE FW version reserved value, if value is 1 then OTA-E is installed, else OTA-D is installed.
+ENTRY &teststatus
+GLOBAL &ACTIVATE_PASSIVE_BLOCK_SUCCESSFUL
+Var.NewLocal char \local_test
+
+var.assign ActivatePassiveBlock = 1
+var.assign gRunExampleTest = 4
+&ACTIVATE_PASSIVE_BLOCK_SUCCESSFUL = 0x2000
+
+LOCAL &yes
+DIALOG.YESNO "Do you want to proceed and directly check if activate passive block request is successful?"
+ENTRY &yes
+IF &yes
+(
+    go
+    wait 3s
+    break
+    v \local_test = (( testStatus & &ACTIVATE_PASSIVE_BLOCK_SUCCESSFUL) >> 13)
+    VAR.IF ( 1 == \local_test )
+    (
+        DIALOG.MESSAGE "Passive Block is activated, please check DCM status after functional reset."
+        &activate_passive_block = 1
+    )
+    ELSE
+    (
+        DIALOG.MESSAGE "Passive Block not activated."
+    )
+)
+ELSE
+(
+    &continue_test = 0
+)
+
+ENDDO

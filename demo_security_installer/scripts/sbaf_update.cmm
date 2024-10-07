@@ -1,0 +1,103 @@
+Var.NEWLOCAL int \local_test
+cd.do attach_core_m7_0.cmm
+
+Dialog.OK "Select Secure BAF Pink image to load in internal Flash"
+
+&SBAF_PinkImageAddress=0x00422000
+
+GOSUB ProgramSBAF
+
+&header=Data.long(SD:&SBAF_PinkImageAddress)
+IF (0x60FFFFDC!=&header)
+(
+	DIALOG.MESSAGE "Error in Flash Programming or Incorrect SBAF Pink image loaded."
+    DO load_app_symbols.cmm
+    ENDDO
+)
+ELSE
+(
+    ; Load Demo app symbols
+    IF ("&CONFIG"=="GHS")
+    (
+        IF OS.FILE.EXIST(..\Projects\GHS\demo_app\bin\demo_app.elf)==TRUE()
+            data.load.elf "..\Projects\GHS\demo_app\bin\demo_app.elf" /nocode
+        ELSE
+            DIALOG.OK "Symbols not found please build the demo app GHS project."
+    )
+    ELSE
+    (
+        IF OS.FILE.EXIST(..\Projects\S32DS\demo_app\S32K3xx\bin\&SOC_ID\S32K3XX_demo_app.elf)==TRUE()
+            data.load.elf "..\Projects\S32DS\demo_app\S32K3xx\bin\&SOC_ID\S32K3XX_demo_app.elf" /nocode
+        ELSE
+            DIALOG.OK "Symbols not found please build the demo app S32DS project."
+    )
+
+    v gRunExampleTest = 64
+    LOCAL &yes
+    DIALOG.YESNO "Do you want to proceed and directly check if SBAF update is successful?"
+    ENTRY &yes
+    IF &yes
+    (
+        ;wait for sometime for HSE FW to perform SBAF Update
+        go
+        wait 10s
+        break
+        v \local_test = (testStatus >> 22)&0x1
+        var.if ( \local_test == 1)
+        (
+            Var.AddWatch testStatus
+            DIALOG.MESSAGE "SBAF Update successful"
+            go
+            wait 1s
+            break
+        )
+        else
+        (
+            DIALOG.MESSAGE "SBAF Update unsucessful"
+        )
+
+        DO load_app_symbols.cmm
+
+        v allTestExecuted=1
+        go
+        wait 200ms
+        break
+    )
+)
+ENDDO
+
+ProgramSBAF:
+(
+    ;Flash Programming
+    ;=========================================================================
+    ; RAM initialization
+    ;=========================================================================
+    ;ME all Clocks enable
+    D.S SD:0x402DC330 %LE %LONG 0xFFFFFFFF    ;  MC_ME.MC_ME_PRTN1_COFB0_CLKEN.R
+    D.S SD:0x402DC334 %LE %LONG 0xFFFFFFFF    ;  MC_ME.MC_ME_PRTN1_COFB1_CLKEN.R
+    D.S SD:0x402DC304 %LE %LONG 0x00000001  ;  MC_ME.MC_ME_PRTN0_PUPD.R
+    D.S SD:0x402DC000 %LE %LONG 0x00005AF0  ;  MC_ME.MC_ME_CTL_KEY.R
+    D.S SD:0x402DC000 %LE %LONG 0x0000A50F  ;  MC_ME.MC_ME_CTL_KEY.R
+
+    wait 0.25s
+
+    TrOnchip.Set CORERESET OFF
+
+    FLASH.RESet
+    FLASH.Create 1. 0x00400000--0x0047FFFF 0x2000 TARGET long;Full Flash erase
+    FLASH.TARGET 0x21000000 0x21002000 0x1000 ~~/demo/arm/flash/long/&FlashDriver
+    Data.load.binary "~~/demo/arm/flash/long/&FlashDriver" 0x21000000
+
+    ;for securing ivt and backup ivt's in case ivt authentication is enabled.
+    FLASH.ChangeType 0x00400000--0x0041FFFF NOP
+    FLASH.ChangeType 0x00450000--0x0047FFFF NOP
+
+    Flash.ReProgram ALL
+
+    ; SBAF pink image programming
+    data.load.binary "..\..\hse\*.*" &SBAF_PinkImageAddress
+
+    FLASH.ReProgram OFF
+    Data.Set SD:0x21000000++0x1FFF %LE %Quad 0x0
+    RETURN
+)

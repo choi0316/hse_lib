@@ -1,0 +1,65 @@
+//@file      menu.cmm
+//@copyright 2019,NXP Semiconductors Confidential Proprietary, All Rights Reserved.
+//@version   0.2
+
+PRIVATE &ppd
+&ppd=OS.PSD()
+GLOBAL &NEW_HSE_FW_ADDRESS &ONE_SHOT &STREAMING
+
+&ONE_SHOT = 0
+&STREAMING = 1
+
+DIALOG
+(
+    HEADER "HSE FW Update"
+    POS 0. 1. 24. 1.
+    LINE "Select mode for data transfer "
+    POS 5. 2. 20. 1.
+    OptionD.1: CHOOSEBOX  "One Shot Mode" " "
+    POS 5. 3. 20. 1.
+    OptionD.2: CHOOSEBOX  "Streaming Mode" " "
+
+    POS 6. 6. 10. 1.
+    DEFBUTTON "OK" "CONTinue"
+    POS 6. 7. 10. 1.
+    BUTTON    "Cancel" "GOTO cancel"
+
+    CLOSE "GOTO cancel"
+)
+
+start:
+    STOP
+    GOTO dialog_ok_1
+    DEFBUTTON "OK" "Continue"
+
+cancel:
+    DIALOG.END
+    STOP
+    ENDDO
+
+
+dialog_ok_1:
+    v gNewHseFwAddress = 0x00422000
+    IF DIALOG.BOOLEAN(OptionD.1)
+    (
+        DIALOG.END
+        &NEW_HSE_FW_ADDRESS = SD:0x00422000
+        v selected_mode = &ONE_SHOT
+    )
+    ELSE IF DIALOG.BOOLEAN(OptionD.2)
+    (
+        DIALOG.END
+        do fw_update_streaming_mode.cmm
+        &NEW_HSE_FW_ADDRESS = SD:0x00422000   ;start address of SBAF - 164kb reserved for fw update
+        v selected_mode = &STREAMING          ;set data transfer mode
+        v temporary_address = 0x00422000 ;address where the image will be copied
+    )
+    ELSE
+    (
+        DIALOG.OK "No valid option selected."
+        DIALOG.END
+    )
+    ;call firmware update script
+    cd.do fw_update.cmm
+
+ENDDO

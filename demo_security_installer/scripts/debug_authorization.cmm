@@ -1,0 +1,108 @@
+; --------------------------------------------------------------------------------
+; @Title: Example for dialog with multiple choose boxes
+; @Description: Shows a dialog with choose boxes
+; @Keywords: choosebox, dialog, practice
+; @Author: REI
+; @Copyright: (C) 1989-2014 Lauterbach GmbH, licensed for use with TRACE32(R) only
+; --------------------------------------------------------------------------------
+; $Id: dialog_choosebox.cmm 8102 2015-02-06 11:38:59Z mobermaier $
+
+DIALOG.OK "Please note, user shall select the current debug authorization configuration done for device."
+DIALOG
+(
+    HEADER "Debug Authorization"
+    POS 1. 0. 28. 1.
+    TEXT "Device configuration"
+
+;choosebox group for Selection A
+    POS 0. 1. 29. 1.
+    LINE "Debug Mode"
+    POS 1. 2. 20. 1.
+    OptionA.1: CHOOSEBOX "Password Mode" ""
+    OptionA.2: CHOOSEBOX "Challenge-Response Mode" ""
+
+
+;choosebox group for Selection B
+    POS 0. 5. 29. 1.
+    LINE "enable ADKm bit"
+    POS 1. 6. 10. 1.
+    OptionB.1: CHOOSEBOX "Enabled" ""
+    OptionB.2: CHOOSEBOX "Disabled" ""
+
+;buttons OK (Default) and Cancel
+    POS 1. 9. 10. 1.
+    DEFBUTTON "OK" "CONTinue"
+    POS 14. 9. 10. 1.
+    BUTTON    "Cancel" "GOTO cancel"
+;define action when window is closed
+    CLOSE "GOTO cancel"
+)
+
+;set default selections
+setdefaults:
+    DIALOG.Set OptionA.1
+    DIALOG.Set OptionB.2
+;STOP command halts script execution
+waitforok:
+    STOP
+;script will continue here when "OK" button is clicked
+    GOTO dialog_ok
+
+
+
+;script continues here when Cancel is clicked"
+cancel:
+    DIALOG.END
+ENDDO
+
+
+
+;script continues here when "OptionB3" is selected
+action_B3:
+    PRINT "Option B3 was selected"
+    ; return to dialog exit point
+    GOTO waitforok
+
+
+
+dialog_ok:
+;get selections
+    IF DIALOG.BOOLEAN(OptionA.1)
+        &SelectionA="OptionA1"
+    IF DIALOG.BOOLEAN(OptionA.2)
+        &SelectionA="OptionA2"
+
+    IF DIALOG.BOOLEAN(OptionB.1)
+        &SelectionB="OptionB1"
+    IF DIALOG.BOOLEAN(OptionB.2)
+        &SelectionB="OptionB2"
+
+
+&INPUT_FILE="adkp_key_input.txt"
+LOCAL &input_data
+OPEN #1 &INPUT_FILE /READ
+READ #1 %LINE &input_data
+CLOSE #1
+
+IF ("&SelectionA"=="OptionA2")&&("&SelectionB"=="OptionB1")
+(
+    DIALOG.END
+    os.Command py -3 debug_App_ADKP.py -CHL_RSP -DER_DEB_KEY
+)
+IF ("&SelectionA"=="OptionA2")&&("&SelectionB"=="OptionB2")
+(
+    DIALOG.END
+    os.Command py -3 debug_App_ADKP.py -CHL_RSP -MSTR_DEB_KEY
+)
+IF ("&SelectionA"=="OptionA1")&&("&SelectionB"=="OptionB1")
+(
+    DIALOG.END
+    os.Command py -3 debug_App_ADKP.py -PASS -DER_DEB_KEY
+)
+IF ("&SelectionA"=="OptionA1")&&("&SelectionB"=="OptionB2")
+(
+    DIALOG.END
+    os.Command py -3 debug_App_ADKP.py -PASS -MSTR_DEB_KEY
+)
+
+ENDDO

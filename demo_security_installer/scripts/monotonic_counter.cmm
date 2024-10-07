@@ -1,0 +1,92 @@
+
+; @file      monotonic_counter.cmm
+; @copyright 2020,NXP Semiconductors Confidential Proprietary, All Rights Reserved.
+; @version   0.2
+
+PRIVATE &ppd
+&ppd=OS.PSD()
+
+GLOBAL &SELECTION_TYPE &SELECTION_CONFIG &SELECTION_READ &SELECTION_INC
+
+&SELECTION_TYPE=0
+&SELECTION_CONFIG=2
+&SELECTION_READ=3
+&SELECTION_INC=4
+
+BREAK
+Var.DelWatch
+Area.clear
+Var.Addwatch MonotonicCntResponse
+SETUP.Var %Hex.on %Decimal.on
+;Var.PRINT "Monotonic Counter Response Code =" MonotonicCntResponse
+;print " "
+
+DIALOG
+(
+    HEADER "Monotonic Counter Operation"
+    POS 1. 1. 40. 1.
+    LINE "Select configuration: "
+
+    POS 1. 2. 20. 1.
+    OptionG.1: CHOOSEBOX "Configure Counter" " "
+
+    POS 1. 4. 40. 1.
+    LINE "Counter Must be Configured Before Read or Write "
+
+    POS 1. 5. 20. 1.
+    OptionG.2: CHOOSEBOX "Read Counter Value" " "
+    POS 1. 6. 20. 1.
+    OptionG.3: CHOOSEBOX "Increment Counter Value" " "
+
+    POS 13. 8. 10. 1.
+    DEFBUTTON "OK" "CONTinue"
+    POS 13. 9. 10. 1.
+    BUTTON    "Cancel" "GOTO cancel"
+
+    CLOSE "GOTO cancel"
+)
+
+start:
+    STOP
+    GOTO dialog_ok_1
+;    DEFBUTTON "OK" "Continue"
+
+cancel:
+    DIALOG.END
+;    DIALOG.OK "Cancelled"
+;    STOP
+    ENDDO
+
+
+dialog_ok_1:
+    BREAK
+    v allTestExecuted = 1
+    GO
+    Wait 1s
+    BREAK
+    IF DIALOG.BOOLEAN(OptionG.1)
+    (
+        DIALOG.END
+        &SELECTION_TYPE=&SELECTION_CONFIG
+        do monotonic_counter_select.cmm
+
+    )
+    ELSE IF DIALOG.BOOLEAN(OptionG.2)
+    (
+        DIALOG.END
+        &SELECTION_TYPE=&SELECTION_READ
+        do monotonic_counter_select.cmm
+    )
+    ELSE IF DIALOG.BOOLEAN(OptionG.3)
+    (
+        DIALOG.END
+        &SELECTION_TYPE=&SELECTION_INC
+        do monotonic_counter_select.cmm
+    )
+    ELSE
+    (
+        DIALOG.OK "Please select from the options given."
+    )
+    GOTO start
+
+ENDDO

@@ -1,0 +1,63 @@
+cd.do attach_core_m7_0.cmm
+ENTRY &OTA_E_image
+
+;check if fw is already installed or not, if installed then terminate this request
+LOCAL &fw_install_status
+Var.NEWLOCAL char \init_status_byte
+
+&fw_install_status=Data.byte(SD:0x4038C107)
+
+Var.Assign \init_status_byte=(&fw_install_status)&0x1
+Var.IF (\init_status_byte == 1)
+(
+    DIALOG.OK "HSE FW is already installed, hence this request is terminated"
+    ENDDO
+)
+
+cd.do system_setup.cmm
+
+FLASH.RESet
+FLASH.Create 1. 0x00400000--0x0047FFFF 0x2000 TARGET long;Full Flash erase
+FLASH.TARGET    0x21000000  0x21002000 0x1000  ~~/demo/arm/flash/long/&FlashDriver
+Data.load.binary "~~/demo/arm/flash/long/&FlashDriver" 0x21000000
+
+;do not remove sbaf in case of k312 device, this area is not used anyway
+FLASH.ChangeType 0x00474000--0x0047FFFF NOP
+
+Flash.ReProgram ALL /Erase
+
+;HSE FW pink image programming
+data.load.binary "..\..\hse\*.*" 0x00400000
+
+
+&OTA_E_image = Data.byte(SD:0x00400000)
+Var.IF ( &OTA_E_image == 0xDB)
+(
+    Dialog.YESNO "You have chosen ABSWAP HSE FW image for installation. Do you want to continue?"
+    ENTRY &yes
+    IF &yes
+    (
+        ;nothing to do
+    )
+    ELSE
+    (
+        data.load.binary "..\..\hse\*.*" 0x00400000
+    )
+)
+Var.if (&OTA_E_image == 0xFF)
+(
+    DIALOG.OK "HSE image was not selected, please retry."
+    v \hse_selected = 0
+    ENDDO
+)
+
+FLASH.ReProgram OFF
+Data.Set SD:0x21000000++0xFFFF %LE %Quad 0x0
+
+; check if file exists
+IF OS.FILE(tests.cmm)
+(
+    DO tests.cmm
+)
+
+ENDDO

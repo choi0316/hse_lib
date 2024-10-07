@@ -1,0 +1,207 @@
+
+; @file      monotonic_counter.cmm
+; @copyright 2020,NXP Semiconductors Confidential Proprietary, All Rights Reserved.
+; @version   0.2
+
+PRIVATE &ppd
+&ppd=OS.PSD()
+
+Var.DelWatch
+;Var.Addwatch MonotonicCntReadValue
+;Var.Addwatch MonotonicCntResponse
+;VAR.Addwatch testStatus
+;Var.PRINT "MonotonicCnt Value in Hex " MonotonicCntReadValue
+print "  "
+DIALOG
+(
+    HEADER "Monotonic Counter Selection"
+    POS 0. 1. 20. 1.
+;   LINE "Value is printed on command line as well as in Watch window "
+    LINE " Select Counter Number"
+    POS 1. 2. 10. 1.
+    OptionSelM.0: CHOOSEBOX  "0" " "
+    POS 1. 3. 10. 1.
+    OptionSelM.1: CHOOSEBOX  "1" " "
+    POS 1. 4. 10. 1.
+    OptionSelM.2: CHOOSEBOX  "2" " "
+    POS 1. 5. 10. 1.
+    OptionSelM.3: CHOOSEBOX  "3" " "
+    POS 1. 6. 10. 1.
+    OptionSelM.4: CHOOSEBOX  "4" " "
+    POS 1. 7. 10. 1.
+    OptionSelM.5: CHOOSEBOX  "5" " "
+    POS 1. 8. 10. 1.
+    OptionSelM.6: CHOOSEBOX  "6" " "
+    POS 1. 9. 10. 1.
+    OptionSelM.7: CHOOSEBOX  "7" " "
+    POS 20. 2. 10. 1.
+    OptionSelM.8: CHOOSEBOX  "8" " "
+    POS 20. 3. 10. 1.
+    OptionSelM.9: CHOOSEBOX  "9" " "
+    POS 20. 4. 10. 1.
+    OptionSelM.10: CHOOSEBOX  "10" " "
+    POS 20. 5. 10. 1.
+    OptionSelM.11: CHOOSEBOX  "11" " "
+    POS 20. 6. 10. 1.
+    OptionSelM.12: CHOOSEBOX  "12" " "
+    POS 20. 7. 10. 1.
+    OptionSelM.13: CHOOSEBOX  "13" " "
+    POS 20. 8. 10. 1.
+    OptionSelM.14: CHOOSEBOX  "14" " "
+    POS 20. 9. 10. 1.
+    OptionSelM.15: CHOOSEBOX  "15" " "
+
+    POS 10. 12. 10. 1.
+    DEFBUTTON "OK" "CONTinue"
+    POS 10. 13. 10. 1.
+    BUTTON    "Back" "GOTO ReturnCode"
+
+    CLOSE "GOTO cancel"
+)
+
+
+start:
+    STOP
+    GOTO dialog_ok_1
+
+
+ReturnCode:
+    DIALOG.END
+    BREAK
+        v allTestExecuted = 1
+        v monotonic_cnt_select = MONOTONIC_CNT_NOT_SELECTED
+        v gProgramAttributes = NO_ATTRIBUTE_PROGRAMMED
+        v gRunExampleTest = 0
+        do monotonic_counter.cmm
+;    STOP
+;    ENDDO
+
+cancel:
+    DIALOG.END
+    STOP
+    ENDDO
+
+
+
+dialog_ok_1:
+    IF DIALOG.BOOLEAN(OptionSelM.0)
+    (
+        v MonotonicCntIndex = 0
+        GOTO SUB_FILL_READ_DATA
+    )
+    ELSE IF DIALOG.BOOLEAN(OptionSelM.1)
+    (
+        v MonotonicCntIndex = 1
+        GOTO SUB_FILL_READ_DATA
+    )
+    ELSE IF DIALOG.BOOLEAN(OptionSelM.2)
+    (
+        v MonotonicCntIndex = 2
+        GOTO SUB_FILL_READ_DATA
+    )
+    ELSE IF DIALOG.BOOLEAN(OptionSelM.3)
+    (
+        v MonotonicCntIndex = 3
+        GOTO SUB_FILL_READ_DATA
+    )
+    ELSE IF DIALOG.BOOLEAN(OptionSelM.4)
+    (
+        v MonotonicCntIndex = 4
+        GOTO SUB_FILL_READ_DATA
+    )
+    ELSE IF DIALOG.BOOLEAN(OptionSelM.5)
+    (
+        v MonotonicCntIndex = 5
+        GOTO SUB_FILL_READ_DATA
+    )
+    ELSE IF DIALOG.BOOLEAN(OptionSelM.6)
+    (
+        v MonotonicCntIndex = 6
+        GOTO SUB_FILL_READ_DATA
+    )
+    ELSE IF DIALOG.BOOLEAN(OptionSelM.7)
+    (
+        v MonotonicCntIndex = 7
+        GOTO SUB_FILL_READ_DATA
+    )
+    ELSE IF DIALOG.BOOLEAN(OptionSelM.8)
+    (
+        v MonotonicCntIndex = 8
+        GOTO SUB_FILL_READ_DATA
+    )
+    ELSE IF DIALOG.BOOLEAN(OptionSelM.9)
+    (
+        v MonotonicCntIndex = 9
+        GOTO SUB_FILL_READ_DATA
+    )
+    ELSE IF DIALOG.BOOLEAN(OptionSelM.10)
+    (
+        v MonotonicCntIndex = 10
+        GOTO SUB_FILL_READ_DATA
+    )
+    ELSE IF DIALOG.BOOLEAN(OptionSelM.11)
+    (
+        v MonotonicCntIndex = 11
+        GOTO SUB_FILL_READ_DATA
+    )
+    ELSE IF DIALOG.BOOLEAN(OptionSelM.12)
+    (
+        v MonotonicCntIndex = 12
+        GOTO SUB_FILL_READ_DATA
+    )
+    ELSE IF DIALOG.BOOLEAN(OptionSelM.13)
+    (
+        v MonotonicCntIndex = 13
+        GOTO SUB_FILL_READ_DATA
+    )
+    ELSE IF DIALOG.BOOLEAN(OptionSelM.14)
+    (
+        v MonotonicCntIndex = 14
+        GOTO SUB_FILL_READ_DATA
+    )
+    ELSE IF DIALOG.BOOLEAN(OptionSelM.15)
+    (
+        v MonotonicCntIndex = 15
+        GOTO SUB_FILL_READ_DATA
+    )
+    ELSE
+    (
+        DIALOG.OK "Invalid Option, please restart"
+        DIALOG.END
+        ENDDO
+    )
+
+
+SUB_FILL_READ_DATA:
+    DIALOG.END
+    BREAK
+    IF "&SELECTION_TYPE"=="&SELECTION_CONFIG"
+    (
+
+        v MonotonicCntRPBitSize = 255
+        do monotonic_counter_configure2.cmm
+    )
+    ELSE IF "&SELECTION_TYPE"=="&SELECTION_READ"
+    (
+        v MonotonicCntReadValue = 0
+        v monotonic_cnt_select = MONOTONIC_CNT_READ
+        v gProgramAttributes = MONOTONIC_COUNTER
+        v gRunExampleTest = 1
+        GO
+        wait 4s
+        BREAK
+        do monotonic_counter_read_display.cmm
+
+    )
+    ELSE IF "&SELECTION_TYPE"=="&SELECTION_INC"
+    (
+        do monotonic_counter_increment2.cmm
+    )
+    ELSE
+    (
+        DIALOG.OK "Invalid Option. Please Restart"
+        STOP
+        ENDDO
+    )
+
+ENDDO

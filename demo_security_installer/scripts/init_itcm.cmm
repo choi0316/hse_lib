@@ -1,0 +1,68 @@
+; --------------------------------------------------------------------------------
+; @Title: Init S32K3 internal ECC protected ITCM
+; @Description:
+;   The memory need to be written 64 bit wise to init the ECC. In case of the
+;   ITCM the DMA cannot be used. Instead the script used a simple assembly.
+;   The tiny code is stored in the SRAM, so the SRAM need to be initialized
+;   before (for example using the init_sram.cmm).
+;   Prerequisites:
+;     * Debugger need to be connected to the M7 core
+;       of the S32K3.
+;     * If the target is running the debugger will stop the core.
+;     * ECC of SRAM need to be initialized.
+; @Keywords: ARM
+; @Author: STK
+; @Board: XS32K3XXEVS-Q289
+; @Chip: S32K344
+; @Copyright: (C) 1989-2019 Lauterbach GmbH, licensed for use with TRACE32(R) only
+; --------------------------------------------------------------------------------
+; $Id: init_itcm.cmm 17947 2021-07-13 09:26:32Z skrausse $
+
+IF !CPUIS("S32K3*")
+(
+    PRINT %ERROR "Wrong CPU selected!"
+    STOP
+    PLIST
+    ENDDO
+)
+
+IF !SYStem.Up()
+(
+    PRINT %ERROR "Debugger is in down state"
+    STOP
+    PLIST
+    ENDDO
+)
+
+IF STATE.RUN()
+    Break
+
+PRIVATE &backup0 &backup1 &because
+
+&base=0x20400000
+
+Register.SWAP
+&backup0=Data.Quad(SD:&base)
+&backup1=Data.Quad(SD:&base+0x8)
+
+Data.Assemble ST:&base      cmp   r1,r2
+Data.Assemble ,             beq   $+0xA
+Data.Assemble ,             strd  r0,r0,[r1]
+Data.Assemble ,             add   r1,#8
+Data.Assemble ,             b     &base
+Data.Assemble ,             bkpt  #0
+
+Register.Set PC &base
+Register.Set R0 0x00000000   ; Initial value
+Register.Set R1 0x00000000   ; TCM start address
+Register.Set R2 0x00010000   ; First address after TCM
+
+Go
+WAIT !STATE.RUN()
+
+Data.Set SD:&base     %Quad &backup0
+Data.Set SD:&base+0x8 %Quad &backup1
+
+Register.SWAP
+
+ENDDO

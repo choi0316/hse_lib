@@ -1,0 +1,55 @@
+
+;=========================================================================
+; ME all Clocks initialization
+;=========================================================================
+;ME all Clocks enable
+D.S SD:0x402DC330 %LE %LONG 0xFFFFFFFF	;  MC_ME.MC_ME_PRTN1_COFB0_CLKEN.R
+D.S SD:0x402DC334 %LE %LONG 0xFFFFFFFF	;  MC_ME.MC_ME_PRTN1_COFB1_CLKEN.R
+D.S SD:0x402DC304 %LE %LONG 0x00000001  ;  MC_ME.MC_ME_PRTN0_PUPD.R
+D.S SD:0x402DC000 %LE %LONG 0x00005AF0  ;  MC_ME.MC_ME_CTL_KEY.R
+D.S SD:0x402DC000 %LE %LONG 0x0000A50F  ;  MC_ME.MC_ME_CTL_KEY.R
+
+;=========================================================================
+; TCMs initialization
+;=========================================================================
+; Init DTCM_0 Backdoor for demo app usage
+Data.Set SD:0x21000000++0xFFFF %LE %Quad 0x0
+
+;=========================================================================
+; SRAM initialization using eDMA TCD0
+;=========================================================================
+;minimum available SRAM is 128kb, starting from address 0x20400000
+
+;Initliazing the first 64 Kbytes of SRAM 0--SRAM Initialized
+D.S SD:0x40280003 %LE %BYTE 0x80     	;Channel 0 Enable
+D.S SD:0x40210000 %LE %LONG 0x40000000  ;clear DONE flag
+D.S SD:0x40210020 %LE %LONG 0x21000000	;SADDR(PFLASH)
+D.S SD:0x40210024 %LE %LONG 0x02030004	;SSIZE 2, DSIZE 3, SOFF 4
+D.S SD:0x40210028 %LE %LONG 0x00010000	;Nbytes(SRAM=64kB)
+D.S SD:0x4021002C %LE %LONG 0x000D8000  ;SLAST=(-NBYTES)
+D.S SD:0x40210030 %LE %LONG 0x20400000	;DADDR(SRAM0)
+D.S SD:0x40210034 %LE %LONG 0x00020008	;CITER 2, DOFF 8
+D.S SD:0x40210038 %LE %LONG 0x00020000  ;DLAST=NBYTES
+D.S SD:0x4021003C %LE %LONG 0x00020001	;BITER 2, Start 1
+wait 0.25s
+
+;Initliazing the second chunk 64 Kbytes of SRAM 0-- SRAM Initialized
+D.S SD:0x40280003 %LE %BYTE 0x80     	;Channel 0 Enable
+D.S SD:0x40210000 %LE %LONG 0x40000000  ;clear DONE flag
+D.S SD:0x40210020 %LE %LONG 0x21000000	;SADDR(PFLASH)
+D.S SD:0x40210024 %LE %LONG 0x02030004	;SSIZE 2, DSIZE 3, SOFF 4
+D.S SD:0x40210028 %LE %LONG 0x00010000	;Nbytes(SRAM=64kB)
+D.S SD:0x4021002C %LE %LONG 0x000D8000  ;SLAST=(-NBYTES)
+D.S SD:0x40210030 %LE %LONG 0x20410000	;DADDR(SRAM0)
+D.S SD:0x40210034 %LE %LONG 0x00020008	;CITER 2, DOFF 8
+D.S SD:0x40210038 %LE %LONG 0x00020000  ;DLAST=NBYTES
+D.S SD:0x4021003C %LE %LONG 0x00020001	;BITER 2, Start 1
+wait 0.25s
+
+;=========================================================================
+; ITCM Initialization
+;=========================================================================
+CD.DO init_itcm.cmm
+
+
+TrOnchip.Set CORERESET OFF

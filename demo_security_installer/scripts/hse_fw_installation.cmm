@@ -1,0 +1,81 @@
+cd.do attach_core_m7_0.cmm
+ENTRY &dcmstat
+VAr.NewGlobal char \dcm_done
+Var.NewGlobal char \ota_e
+Var.NewGlobal char \hse_selected
+&dcmstat = Data.long(SD:0x402AC000)
+v \dcm_done = (&dcmstat & 1)
+v \ota_e = ((&dcmstat >> 16) & 1)
+v \hse_selected = 1
+
+;check if fw is already installed or not, if installed then terminate this request
+LOCAL &fw_install_status
+Var.NEWLOCAL char \init_status_byte
+
+&fw_install_status=Data.byte(SD:0x4038C107)
+
+Var.Assign \init_status_byte=(&fw_install_status)&0x1
+Var.IF (\init_status_byte == 1)
+(
+    DIALOG.OK "HSE FW is already installed, hence this request is terminated"
+    ENDDO
+)
+
+install:
+DIALOG
+(
+    HEADER "HSE Firmware Installation "
+    POS 0. 1. 30. 1.
+    LINE "Select Configuration "
+    POS 1. 2. 30. 1.
+    OptionC.1: CHOOSEBOX "HSE FW installation with IVT" " "
+    POS 1. 3. 30. 1.
+    OptionC.2: CHOOSEBOX "HSE FW installation without IVT" " "
+
+    POS 4. 6. 20. 1.
+    DEFBUTTON "OK" "CONTinue"
+    POS 4. 7. 20. 1.
+    BUTTON    "Cancel" "GOTO cancel"
+
+    CLOSE "GOTO cancel"
+)
+
+start:
+    STOP
+    GOTO dialog_ok
+    DEFBUTTON "OK" "Continue"
+
+cancel:
+    DIALOG.END
+    STOP
+
+dialog_ok:
+
+IF DIALOG.BOOLEAN(OptionC.1)
+(
+    DIALOG.END
+    do program_hse_ivt_and_demo_app.cmm
+    Var.if (\hse_selected == 1)
+    (
+        DIALOG.MESSAGE "IVT, HSE FW-IMG, demo app flashed, functional reset will be issued next."
+        do Issue_FunctionalReset_MC_ME.cmm
+    )
+)
+ELSE IF DIALOG.BOOLEAN(OptionC.2)
+(
+    DIALOG.END
+    do program_hse.cmm
+    Var.if (\hse_selected == 1)
+    (
+        DIALOG.MESSAGE "HSE FW-IMG flashed, functional reset will be issued next."
+        do Issue_FunctionalReset_MC_ME.cmm
+    )
+)
+ELSE
+(
+    DIALOG.END
+    DIALOG.MESSAGE "Select a valid option"
+    goto install
+    ENDDO
+)
+ENDDO

@@ -1,0 +1,276 @@
+;the script prompts user for selecting attribute to be either read
+
+
+read_attr:
+DIALOG
+(
+    HEADER "Read Attribute"
+    POS 0. 1. 25. 1.
+    LINE "Select configuration: "
+    POS 1. 2. 20. 1.
+    OptionX.1: CHOOSEBOX "HSE FW version" " "
+    POS 1. 3. 20. 1.
+    OptionX.2: CHOOSEBOX "HSE FW capabilities" " "
+    POS 1. 4. 20. 1.
+    OptionX.3: CHOOSEBOX "Debug Auth Method" " "
+    POS 1. 5. 20. 1.
+    OptionX.4: CHOOSEBOX "Current Life Cycle" " "
+    POS 1. 6. 20. 1.
+    OptionX.5: CHOOSEBOX "MU1 configuration status" " "
+    POS 1. 7. 20. 1.
+    OptionX.6: CHOOSEBOX "HSE Security Policies" " "
+    POS 1. 8. 20. 1.
+    OptionX.7: CHOOSEBOX "Verify ADKP" " "
+
+
+    POS 5. 11. 12. 1.
+    DEFBUTTON "OK" "CONTinue"
+    POS 5. 12. 12. 1.
+    BUTTON    "CANCEL" "GOTO cancel"
+
+    CLOSE "GOTO cancel"
+)
+
+start:
+    STOP
+    GOTO dialog_ok_2
+    DEFBUTTON "OK" "Continue"
+
+cancel:
+    DIALOG.END
+    ENDDO
+
+; Sequence followed in each of the options
+;1) Previous dialog box will be closed.
+;2) variables in cmm will be set in order for demo app to execute that particular example
+;3) User will be prompted for the following
+;   a) if it wants to check the output of the request or wants to debug the code.
+;   b) In case of direct output, user will be directly informed of the response from HSE to app.
+;   c) In latter case, code will stop at while(!gRunExampleTest) in main function and user can debug from that point onwards.
+;   Following is the description for each variables
+; gRunExampleTest:      global variable for selecting which example feature to run
+; gProgramAttributes:   in case of gRunExampleTest = 1 which means Attribute Programming, gProgramAttributes variable selects which
+;                       attribute has to be executed as given above.(Line No 23)
+
+;add response from HSE in Watch list
+
+dialog_ok_2:
+    VAR.DelWatch gHseFwVersion
+    VAR.Delwatch testStatus
+    VAR.Delwatch ghseCapabilites
+    VAR.Delwatch gDebugAuthMode
+    VAR.Delwatch gIVTauthvalue
+    VAR.Delwatch gHseCurrentLC
+    VAR.DelWatch ReadMu1Config
+    VAR.DelWatch gProgramAttributes
+    VAR.DelWatch GetEnableAdkmBit
+    VAR.DelWatch GetStartAsUserBit
+    IF DIALOG.BOOLEAN(OptionX.1)
+    (
+        DIALOG.END
+        VAR.NEWLOCAL int \local_test
+        v gProgramAttributes=1
+        v gRunExampleTest=1
+        go
+        wait 2s
+        break
+        v \local_test = (testStatus&0x1)
+        ;By default the code will be stuck at start of main, the user can debug the code by stepping in and once execution is complete, check the status by
+        VAR.IF (\local_test == 1)
+        (
+            VAR.Addwatch %HEX gHseFwVersion
+            DIALOG.MESSAGE "Fw Version is printed in Watch window"
+        )
+        ELSE
+        (
+            DIALOG.MESSAGE "HSE FW Version reading un-successful, received a general error response."
+        )
+
+    )
+    ELSE IF DIALOG.BOOLEAN(OptionX.2)
+    (
+        DIALOG.END
+        v gProgramAttributes = 2
+        v gRunExampleTest = 1
+        go
+        wait 0.5s
+        break
+
+        VAR.IF (gsrvResponse == 1436920371)
+        (
+            VAR.Addwatch %HEX ghseCapabilites
+            DIALOG.MESSAGE "Fw capabilities is printed in Watch window."
+        )
+        ELSE
+        (
+            DIALOG.MESSAGE "HSE FW capabilities reading un-successful, received a general error response."
+        )
+    )
+    ELSE IF DIALOG.BOOLEAN(OptionX.3)
+    (
+        DIALOG.END
+        v gProgramAttributes = 8
+        v gRunExampleTest = 1
+        v write_attr = 0
+        go
+        wait 0.5s
+        break
+        VAR.IF ( 0 == ((testStatus>>4)&0x1) )
+        (
+            DIALOG.MESSAGE "Debug Authorization mode is Password."
+        )
+        VAR.IF ( (1 == ((testStatus>>4)&0x1) ) && (1 == gDebugAuthMode) )
+        (
+            DIALOG.MESSAGE "Debug Authorization mode is Challenge Response"
+        )
+        VAR.AddWatch %Hex gDebugAuthMode
+    )
+    ELSE IF DIALOG.BOOLEAN(OptionX.4)
+    (
+        DIALOG.END
+
+        v gProgramAttributes = 16
+        v gRunExampleTest = 1
+        v write_attr = 0
+        go
+        wait 0.5s
+        break
+
+        VAR.IF (gsrvResponse == 1436920371)
+        (
+            VAR.AddWatch %Hex gHseCurrentLC
+            ;this is the case when sample is E1 new
+            VAR.IF (2 == gHseCurrentLC)
+            (
+                DIALOG.MESSAGE "Current Life Cycle is OEM_PROD."
+            )
+            VAR.IF ( 3 == gHseCurrentLC)
+            (
+                DIALOG.MESSAGE "Current Life Cycle is CUST_DEL."
+            )
+            VAR.IF ( 7 == gHseCurrentLC)
+            (
+                DIALOG.MESSAGE "Current Life Cycle is INFIELD."
+            )
+            ;this is the case when sample is E5
+            VAR.IF (4 == gHseCurrentLC)
+            (
+                DIALOG.MESSAGE "Current Life Cycle is CUST_DEL."
+            )
+            VAR.IF ( 8 == gHseCurrentLC)
+            (
+                DIALOG.MESSAGE "Current Life Cycle is OEM_PROD."
+            )
+            VAR.IF (16 == gHseCurrentLC)
+            (
+                DIALOG.MESSAGE "Current Life Cycle is IN_FIELD."
+            )
+            VAR.IF (6 == gHseCurrentLC)
+            (
+                DIALOG.MESSAGE "Current Life Cycle is MCU_PROD."
+            )
+        )
+    ELSE
+    (
+        DIALOG.MESSAGE "Life Cycle Read Attribute not successful."
+    )
+    )
+    ELSE IF DIALOG.BOOLEAN(OptionX.5)
+    (
+        DIALOG.END
+        v gProgramAttributes = 64
+        v gRunExampleTest = 1
+
+        go
+        wait 1s
+        break
+        VAR.IF (ReadMu1Config == 0x5A)
+        (
+            DIALOG.MESSAGE "MU1 is deactivated."
+        )
+        VAR.IF (ReadMu1Config == 0xA5)
+        (
+            DIALOG.MESSAGE "MU1 is activated."
+        )
+        VAR.IF ( ReadMu1Config == 0x0)
+        (
+            DIALOG.MESSAGE "MU1 not configured."
+        )
+        VAR.IF ( ReadMu1Config == 0xFF)
+        (
+            DIALOG.OK "MU read attribute failed, please try again."
+        )
+        VAR.AddWatch %Hex ReadMu1Config
+    )
+    ELSE IF DIALOG.BOOLEAN(OptionX.6)
+    (
+        DIALOG.END
+        v gProgramAttributes = 128
+        v gRunExampleTest = 1
+        v write_attr = 0
+        go
+        wait 1s
+        break
+        VAR.AddWatch %Hex GetEnableAdkmBit
+        VAR.AddWatch %Hex GetStartAsUserBit
+        VAR.IF ( 1 == GetEnableAdkmBit )
+        (
+            VAR.IF ( 1 == GetStartAsUserBit )
+            (
+                DIALOG.MESSAGE " ADKPm and StartAsUser bit enabled."
+            )
+            ELSE
+            (
+                DIALOG.MESSAGE " ADKm bit enabled and StartAsUser bit disabled."
+            )
+        )
+        VAR.IF (0 == GetEnableAdkmBit)
+        (
+            VAR.IF ( 0 == GetStartAsUserBit )
+            (
+                DIALOG.MESSAGE " ADKm bit and StartAsUser bit disabled."
+            )
+            ELSE
+            (
+                DIALOG.MESSAGE " ADKm bit disabled and StartAsUser bit enabled."
+            )
+        )
+        VAR.IF ( (0x7F == GetEnableAdkmBit) || (0x7F == GetStartAsUserBit))
+        (
+            DIALOG.MESSAGE " EXTEND_CUST_DELSECURITY_POLICY read attribute failed."
+        )
+    )
+    ELSE IF DIALOG.BOOLEAN(OptionX.7)
+    (
+        DIALOG.END
+        LOCAL &yes
+        DIALOG.YESNO "Please note, programmed ADKP will be verified against adkp_key_input.txt file. If you want to change the input to ADKP, please click No, for directly proceeding, click Yes!"
+        ENTRY &yes
+        IF &yes
+        (
+            cd.do InputADKP.cmm
+            v gProgramAttributes = 4
+            v gRunExampleTest = 1
+        )
+        ELSE
+        (
+            pedit adkp_key_input.txt
+            goto read_attr
+        )
+        LOCAL &adkp
+        go
+        wait 2s
+        break
+        var.if ((testStatus & 0x8000) == 0x8000)
+            DIALOG.MESSAGE "Programmed ADKP is verified successfully against adkp key in adkp_key_input.txt"
+        else
+            DIALOG.MESSAGE "ADKP programmed verification failed."
+    )
+    ELSE
+    (
+        DIALOG.OK "Please select a valid option."
+        DIALOG.END
+        goto read_attr
+    )
+
+ENDDO

@@ -1,0 +1,237 @@
+;set up JTAG access subroutine macros
+	GOSUB JTAG_SetupMacros
+	&ENABLE_SOC_DATA1_CMD=0x0D
+	&ENABLE_SOC_DATA1_IR_LEN=0x8
+	&HSE_Chrp_SOC_DATA1_0=0x0
+	&HSE_Chrp_SOC_DATA1_1=0x0
+	&HSE_Chrp_SOC_DATA1_2=0x0
+	&HSE_Chrp_SOC_DATA1_3=0x0
+	&HSE_Chrp_SOC_DATA1_4=0x0
+	&HSE_Chrp_SOC_DATA1_5=0x0
+	&HSE_Chrp_SOC_DATA1_6=0x0
+	&HSE_Chrp_SOC_DATA1_7=0x0
+	&HSE_Chrp_SOC_DATA1_8=0x0
+	&HSE_Chrp_SOC_DATA1_9=0x0
+	&HSE_Chrp_SOC_DATA1_10=0x0
+	&HSE_Chrp_SOC_DATA1_11=0x0
+	&HSE_Chrp_SOC_DATA1_12=0x0
+	&HSE_Chrp_SOC_DATA1_13=0x0
+	&HSE_Chrp_SOC_DATA1_14=0x0
+	&HSE_Chrp_SOC_DATA1_15=0x0
+
+;we are in SYStem.DOWN and have to initialize JTAG port
+	JTAG.LOCK                         ;exclusive control of the JTAG port
+	JTAG.PIN ENABLE                   ;enable JTAG pin drivers output
+	SYStem.JtagClock 200khz
+	&JTAG_ResetStateMachine	    	;Reset JTAG state machine
+	SYStem.JtagClock 200khz
+ 
+;==========================Select SOC_DATA1 ENTER-Enter=======================================
+  //PRINT "ENABLE SOC_DATA1"
+  &JTAG_ReadWriteIR &ENABLE_SOC_DATA1_CMD &ENABLE_SOC_DATA1_IR_LEN  
+;==========================Select SOC_DATA1 ENTER-Exit========================================
+
+;==========================Read SOC_DATA1 and UID - 0-Enter===================================
+	&JTAG_GOTO_SHIFTDR
+	
+	;Read UID
+	JTAG.SHIFTTDI %Long 0x00000000
+	&HSE_Chrp_SOC_DATA1_0=JTAG.SHIFT()
+	JTAG.SHIFTTDI %Long 0x00000000
+	&HSE_Chrp_SOC_DATA1_1=JTAG.SHIFT()
+	JTAG.SHIFTTDI %Long 0x00000000
+	&HSE_Chrp_SOC_DATA1_2=JTAG.SHIFT()
+	JTAG.SHIFTTDI %Long 0x00000000
+	&HSE_Chrp_SOC_DATA1_3=JTAG.SHIFT()
+	JTAG.SHIFTTDI %Long 0x00000000
+	&HSE_Chrp_SOC_DATA1_4=JTAG.SHIFT()
+	JTAG.SHIFTTDI %Long 0x00000000
+	&HSE_Chrp_SOC_DATA1_5=JTAG.SHIFT()
+	JTAG.SHIFTTDI %Long 0x00000000
+	&HSE_Chrp_SOC_DATA1_6=JTAG.SHIFT()
+	JTAG.SHIFTTDI %Long 0x00000000
+	&HSE_Chrp_SOC_DATA1_7=JTAG.SHIFT()
+	JTAG.SHIFTTDI %Long 0x00000000
+	&HSE_Chrp_SOC_DATA1_8=JTAG.SHIFT()
+	JTAG.SHIFTTDI %Long 0x00000000
+	&HSE_Chrp_SOC_DATA1_9=JTAG.SHIFT()
+	JTAG.SHIFTTDI %Long 0x00000000
+	&HSE_Chrp_SOC_DATA1_10=JTAG.SHIFT()
+	JTAG.SHIFTTDI %Long 0x00000000
+	&HSE_Chrp_SOC_DATA1_11=JTAG.SHIFT()
+	JTAG.SHIFTTDI %Long 0x00000000
+	&HSE_Chrp_SOC_DATA1_12=JTAG.SHIFT()
+	JTAG.SHIFTTDI %Long 0x00000000
+	&HSE_Chrp_SOC_DATA1_13=JTAG.SHIFT()
+	JTAG.SHIFTTDI %Long 0x00000000
+	&HSE_Chrp_SOC_DATA1_14=JTAG.SHIFT()
+	JTAG.SHIFTTDI %Long 0x00000000
+	&HSE_Chrp_SOC_DATA1_15=JTAG.SHIFT()
+	&JTAG_GOTO_RT_IDLE
+	//PRINTF "SOC_DATA1: 0x%08X 0x%08X 0x%08X 0x%08X 0x%08X 0x%08X 0x%08X 0x%08X 0x%08X 0x%08X 0x%08X 0x%08X 0x%08X 0x%08X 0x%08X 0x%08X"\
+	&HSE_Chrp_SOC_DATA1_0\
+	&HSE_Chrp_SOC_DATA1_1\
+	&HSE_Chrp_SOC_DATA1_2\
+	&HSE_Chrp_SOC_DATA1_3\
+	&HSE_Chrp_SOC_DATA1_4\
+	&HSE_Chrp_SOC_DATA1_5\
+	&HSE_Chrp_SOC_DATA1_6\
+	&HSE_Chrp_SOC_DATA1_7\
+	&HSE_Chrp_SOC_DATA1_8\
+	&HSE_Chrp_SOC_DATA1_9\
+	&HSE_Chrp_SOC_DATA1_10\
+	&HSE_Chrp_SOC_DATA1_11\
+	&HSE_Chrp_SOC_DATA1_12\
+	&HSE_Chrp_SOC_DATA1_13\
+	&HSE_Chrp_SOC_DATA1_14\
+	&HSE_Chrp_SOC_DATA1_15
+	//PRINTF "UID: 0x%08X 0x%08X" &HSE_Chrp_SOC_DATA1_8 &HSE_Chrp_SOC_DATA1_9
+OPEN #1 .\uid.txt /Create
+WRITE #1 "&HSE_Chrp_SOC_DATA1_8: " "&HSE_Chrp_SOC_DATA1_9: "
+CLOSE #1
+
+&JTAG_ResetStateMachine	    ;Reset JTAG state machine	
+
+ JTAG.UNLOCK
+ ENDDO &HSE_Chrp_SOC_DATA1_8 &HSE_Chrp_SOC_DATA1_9
+
+;--------------------------------------------------------------------------------------------
+JTAG_SetupMacros:
+  GLOBAL &JTAG_ResetStateMachine
+  &JTAG_ResetStateMachine="GOSUB JTAG_ResetStateMachine"
+
+  GLOBAL &JTAG_GOTO_SHIFTIR &JTAG_GOTO_SHIFTDR &JTAG_GOTO_RT_IDLE
+  &JTAG_GOTO_SHIFTIR="JTAG.SHIFTTMS 1 1 0 0" ;RUN-TEST/IDLE ---> SHIFT-IR
+  &JTAG_GOTO_SHIFTDR="JTAG.SHIFTTMS 1 0 0"   ;RUN-TEST/IDLE ---> SHIFT-DR
+  &JTAG_GOTO_RT_IDLE="JTAG.SHIFTTMS 1 0"     ;Exit1-DR/Exit1-IR  ---> RUN-TEST/IDLE
+  &JTAG_GOTO_RT_IDLE_LEAVETAP="JTAG.SHIFTTMS 1 0 1 0 1 1 0"    ;walk through PAUSE-DR/IR to select JTAGC
+  &JTAG_GOTO_SHIFTDR_SAMETAP="JTAG.SHIFTTMS 1 1 1 0 0"   ;SHIFT-DR ---> SHIFT-DR
+
+
+
+  GLOBAL &JTAG_ReadWriteIR &JTAG_WriteDR &JTAG_ReadDR
+  &JTAG_ReadWriteIR="GOSUB JTAG_ReadWriteIR "
+  &JTAG_WriteDR="GOSUB JTAG_WriteDR "
+  &JTAG_ReadDR="GOSUB JTAG_ReadDR "
+
+  GLOBAL &JTAG_WriteNexusReg &JTAG_ReadNexusReg
+  &JTAG_WriteNexusReg="GOSUB JTAG_WriteNexusReg "
+  &JTAG_ReadNexusReg="GOSUB JTAG_ReadNexusReg "
+  RETURN
+
+JTAG_ResetStateMachine: ;reset JTAG state machine and go to RUN-TEST/IDLE
+  JTAG.PIN NTRST 1               ;release TRST(JCOMP)
+  JTAG.PIN NTRST 0               ;assert TRST(JCOMP)
+  WAIT 100.ms
+  JTAG.PIN NTRST 1               ;release TRST(JCOMP)
+  WAIT 100.ms
+  JTAG.SHIFTTMS 0                ;go to RUN-TEST/IDLE
+;additional JTAG init (for processors without JCOMP)
+  JTAG.SHIFTTMS 1 1 1 1 1 1 1 0  ;go via TEST-LOGIC-RESET to RUN-TEST/IDLE
+  JTAG.SHIFTTMS 1 0 1 0 1 1 0    ;walk through PAUSE-DR to select JTAGC
+  RETURN
+
+JTAG_ReadWriteIR:   ;send a JTAG instruction of specified length
+  LOCAL &command &length
+  ENTRY &command &length
+  GOSUB JTAG_MakeBitStream &command &length
+  ENTRY %line &bitstream
+  &JTAG_GOTO_SHIFTIR
+  JTAG.SHIFTREG &bitstream
+  &value=JTAG.SHIFT()
+  &JTAG_GOTO_RT_IDLE
+  RETURN &value
+
+JTAG_ReadDR:   ;read DR
+  LOCAL &length
+  ENTRY &length
+  GOSUB JTAG_MakeBitStream 0 &length
+  ENTRY %line &bitstream
+  &JTAG_GOTO_SHIFTDR
+  JTAG.SHIFTREG &bitstream
+  &value=JTAG.SHIFT()
+  &JTAG_GOTO_RT_IDLE
+  RETURN &value
+
+JTAG_WriteDR:   ;write DR
+  LOCAL &value &length
+  ENTRY &value &length
+  GOSUB JTAG_MakeBitStream &value &length
+  ENTRY %line &bitstream
+  &JTAG_GOTO_SHIFTDR
+  JTAG.SHIFTREG &bitstream
+  &JTAG_GOTO_RT_IDLE
+  RETURN
+  
+JTAG_WriteDR8:   ;write DR
+  LOCAL &value0 &value1 &value2 &value3 &value4 &value5 &value6 &value7 &length
+  ENTRY &value0 &value1 &value2 &value3 &value4 &value5 &value6 &value7 &length
+  GOSUB JTAG_MakeBitStream &value0 &length
+  ENTRY %line &bitstream
+  &JTAG_GOTO_SHIFTDR
+  JTAG.SHIFTREG &bitstream
+  GOSUB JTAG_MakeBitStream &value1 &length
+  ENTRY %line &bitstream
+  JTAG.SHIFTREG &bitstream
+  GOSUB JTAG_MakeBitStream &value2 &length
+  ENTRY %line &bitstream
+  JTAG.SHIFTREG &bitstream
+  GOSUB JTAG_MakeBitStream &value3 &length
+  ENTRY %line &bitstream
+  JTAG.SHIFTREG &bitstream
+  GOSUB JTAG_MakeBitStream &value4 &length
+  ENTRY %line &bitstream
+  JTAG.SHIFTREG &bitstream
+  GOSUB JTAG_MakeBitStream &value5 &length
+  ENTRY %line &bitstream
+  JTAG.SHIFTREG &bitstream
+  GOSUB JTAG_MakeBitStream &value6 &length
+  ENTRY %line &bitstream
+  JTAG.SHIFTREG &bitstream
+  GOSUB JTAG_MakeBitStream &value7 &length
+  ENTRY %line &bitstream
+  JTAG.SHIFTREG &bitstream
+  &JTAG_GOTO_RT_IDLE
+  RETURN
+  
+  
+
+JTAG_ReadNexusReg: ;read a 32-bit register of the nexus block
+  LOCAL &regindex
+  ENTRY &regindex
+  &command=(&regindex<<1)|0x00 ;read
+  &JTAG_GOTO_SHIFTDR
+  JTAG.SHIFTREG %byte &command
+  &JTAG_GOTO_RT_IDLE
+  &JTAG_GOTO_SHIFTDR
+  JTAG.SHIFTREG %long 0x00000000
+  &value=JTAG.SHIFT()
+  &JTAG_GOTO_RT_IDLE
+  RETURN &value
+
+JTAG_WriteNexusReg: ;write a 32-bit register of the nexus block
+  LOCAL &regindex &value
+  ENTRY &regindex &value
+  &JTAG_GOTO_SHIFTDR
+  &command=(&regindex<<1)|0x01 ;write
+  JTAG.SHIFTREG %byte &command
+  &JTAG_GOTO_RT_IDLE
+  &JTAG_GOTO_SHIFTDR
+  JTAG.SHIFTREG %long &value
+  &JTAG_GOTO_RT_IDLE
+  RETURN
+
+JTAG_MakeBitStream: ;convert a value into a bit stream (max. 32 bit)
+  LOCAL &value &length
+  ENTRY &value &length
+  &bitstream=""
+  while &length>0
+  (
+    if (&value&0x00000001)!=0
+      &bitstream="&bitstream 1"
+    else
+      &bitstream="&bitstream 0"
+    &length=&length-1
+    &value=&value>>1.
+  )
+  RETURN &bitstream

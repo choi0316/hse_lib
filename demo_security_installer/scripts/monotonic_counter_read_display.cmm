@@ -1,0 +1,53 @@
+
+; @file      monotonic_counter.cmm
+; @copyright 2020,NXP Semiconductors Confidential Proprietary, All Rights Reserved.
+; @version   0.2
+
+PRIVATE &ppd
+&ppd=OS.PSD()
+
+Var.DelWatch
+;VAR.Addwatch testStatus
+
+
+DIALOG
+(
+    HEADER "Monotonic Counter Reading"
+    POS 0. 1. 40. 1.
+    LINE "                                              "
+
+    POS 4. 2. 10. 1.
+    BUTTON    "Back" "GOTO ReturnCode"
+
+    CLOSE "GOTO cancel"
+)
+
+start:
+    Var.Addwatch MonotonicCntReadValue
+    Var.Addwatch MonotonicCntResponse
+    Var.PRINT "Monotonic Counter Value =" MonotonicCntReadValue
+    STOP
+
+
+
+ReturnCode:
+    DIALOG.END
+        BREAK
+        v allTestExecuted = 1
+        v monotonic_cnt_select = MONOTONIC_CNT_NOT_SELECTED
+        v gProgramAttributes = NO_ATTRIBUTE_PROGRAMMED
+        v gRunExampleTest = 0
+    do monotonic_counter.cmm
+
+
+cancel:
+    DIALOG.END
+    STOP
+    ENDDO
+
+
+ENDDO
+
+
+
+

@@ -1,0 +1,48 @@
+;load secure boot app symbols
+do load_secure_boot_app_symbols.cmm
+;check secure boot status
+Var.DelWatch smrCoreStatus_Get
+LOCAL &she_boot_status
+var.newlocal char \SheStatusSecureBootFinished
+var.newlocal char \SheStatusSecureBootOk
+var.newlocal char \SheStatusSecureBootInit
+var.newlocal char \MaskBootFinished
+var.newlocal char \MaskBootOk
+var.newlocal char \MaskBootInit
+;boot finished status is read at bit3 and book ok status is read at bit4 and boot_init in bit 2
+Var.Assign \MaskBootFinished=3
+Var.Assign \MaskBootOk=4
+Var.Assign \MaskBootInit=2
+;Read Boot status from MU0 address
+&she_boot_status=Data.short(SD:0x4038C106)
+data.dump 0x4038C106++0x1
+;Assign values
+Var.Assign \SheStatusSecureBootFinished = ( (&she_boot_status >> \MaskBootFinished) & 1)
+Var.Assign \SheStatusSecureBootOk = ((&she_boot_status >> \MaskBootOk) & 1)
+Var.Assign \SheStatusSecureBootInit = ((&she_boot_status >> \MaskBootInit) & 1)
+;HSE_SHE_STATUS_SECURE_BOOT_FINISHED--> (1<<3)
+Var.if ( (\SheStatusSecureBootFinished == 1) && (\SheStatusSecureBootOk == 0) && (\SheStatusSecureBootInit == 0) )
+(
+    DIALOG.MESSAGE "SHE based secure boot failed, SHE_STATUS_SECURE_BOOT_FINISHED bit is 1 and SHE_STATUS_SECURE_BOOT_OK bit is 0."
+)
+Var.if ( (\SheStatusSecureBootFinished == 0) && (\SheStatusSecureBootOk == 1) )
+(
+    DIALOG.MESSAGE "SHE based secure boot passed, SHE_STATUS_SECURE_BOOT_FINISHED bit is 0 and SHE_STATUS_SECURE_BOOT_OK bit is 1."
+)
+Var.if ( (\SheStatusSecureBootFinished == 1) && (\SheStatusSecureBootOk == 0)&& (\SheStatusSecureBootInit == 1) )
+(
+    DIALOG.MESSAGE "SHE based secure boot failed and BOOT MAC personalized completed, SHE_STATUS_SECURE_BOOT_FINISHED bit is 1, SHE_STATUS_SECURE_BOOT_OK bit is 0 and SHE_STATUS_SECURE_BOOT_INIT bit is 1."
+)
+Var.if ( (\SheStatusSecureBootFinished == 0) && (\SheStatusSecureBootOk == 0)&& (\SheStatusSecureBootInit == 0) )
+(
+    VAR.IF (1 == secure_boot_status)
+    (
+        DIALOG.MESSAGE "Secure boot successful"
+    )
+    ELSE
+    (
+        DIALOG.MESSAGE "Secure boot not successful. Please try again."
+    )
+)
+Var.AddWatch %Hex smrCoreStatus_Get
+ENDDO

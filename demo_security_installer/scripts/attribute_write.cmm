@@ -1,0 +1,354 @@
+;the script prompts user for selecting attribute to be write
+
+write_attr:
+Var.NewGlobal char \advanceLC_requested
+;user to select options from Attribute Programming
+VAR.DelWatch gHseFwVersion
+VAR.Delwatch testStatus
+VAR.Delwatch ghseCapabilites
+VAR.Delwatch gDebugAuthMode
+VAR.Delwatch gIVTauthvalue
+VAR.Delwatch gHseCurrentLC
+VAR.DelWatch ReadMu1Config
+VAR.DelWatch gProgramAttributes
+VAR.DelWatch applicationDebugKeyPassword
+VAR.DelWatch gOldHseFwVersion
+VAR.DelWatch GetStartAsUserBit
+DIALOG
+(
+    HEADER "Write Attribute"
+    POS 0. 1. 30. 1.
+    LINE "SELECT configuration: "
+    POS 1. 2. 20. 1.
+    OptionE.1: CHOOSEBOX "Program ADKP Key" " "
+    POS 1. 3. 20. 1.
+    OptionE.2: CHOOSEBOX "Update Debug Auth Mode" " "
+    POS 1. 4. 20. 1.
+    OptionE.3: CHOOSEBOX "Advance Life Cycle" " "
+    POS 1. 5. 20. 1.
+    OptionE.4: CHOOSEBOX "Activate/Deactivate MU1" " "
+    POS 1. 6. 20. 1.
+    OptionE.5: CHOOSEBOX "Extend HSE Security Policies" " "
+
+    POS 5. 10. 12. 1.
+    DEFBUTTON "Ok" "CONTinue"
+    POS 5. 11. 12. 1.
+    BUTTON    "Cancel" "GOTO dialog_3"
+
+    CLOSE "GOTO cancel"
+)
+
+start:
+    STOP
+    GOTO dialog_ok_2
+    DEFBUTTON "OK" "Continue"
+
+cancel:
+    DIALOG.END
+    STOP
+
+dialog_3:
+    DIALOG.END
+    ENDDO
+STOP
+
+; Sequence followed in each of the options
+;1) Previous dialog box will be closed.
+;2) variables in cmm will be set in order for demo app to execute that particular example
+;3) User will be prompted for the following
+;   a) if it wants to check the output of the request or wants to debug the code.
+;   b) In case of direct output, user will be directly informed of the response from HSE to app.
+;   c) In latter case, code will stop at while(!gRunExampleTest) in main function and user can debug from that point onwards.
+;   Following is the description for each variables
+; gRunExampleTest:      global variable for selecting which example feature to run
+; gProgramAttributes:   in case of gRunExampleTest = 1 which means Attribute Programming, gProgramAttributes variable selects which
+;                       attribute has to be executed as given above.(Line No 38)
+
+;add response from HSE in Watch list
+
+dialog_ok_2:
+    IF DIALOG.BOOLEAN(OptionE.1)
+    (
+        DIALOG.END
+        LOCAL &yes
+        DIALOG.YESNO "Please note that ADKP will be programmed from ADKP text file adkp_input.txt. For either value of enableADKm bit, the ADKP in text file should be a plain value.Click Yes for programmming ADKP, No for updating text file."
+        ENTRY &yes
+        //user wants to debug the code, do not proceed from script
+        IF &yes
+        (
+            cd.do InputADKP.cmm
+            v gProgramAttributes = 4
+            v gRunExampleTest = 1
+            v write_attr=1
+            LOCAL &yes
+            DIALOG.YESNO "Do you want to proceed and check the output directly?"
+            ENTRY &yes
+            //user wants to debug the code, do not proceed from script
+            IF &yes
+            (
+                go
+                wait 4s
+                break
+
+                VAR.IF ( ( 1436920371 == keyprog_srvResponse ) && ( 1436920371 == gsrvResponse ) )
+                (
+                    DIALOG.MESSAGE "ADKP key is already programmed."
+                )
+                VAR.IF (gsrvResponse != 1436920371)
+                (
+                    DIALOG.MESSAGE "There is an error while programming ADKP key password. Please try again after reset"
+                )
+                VAR.IF ( ( 2857738780 == keyprog_srvResponse ) && (gsrvResponse == 1436920371) )
+                (
+                    DIALOG.MESSAGE "ADKP key is programmed successfully."
+                )
+            )
+            else
+            (
+                &continue_test = 0
+            )
+        )
+        ELSE
+        (
+            PRINT "Warning: Please note, the input in text file should be in hex format only."
+            cd.edit "adkp_key_input.txt"
+        )
+    )
+    ELSE IF DIALOG.BOOLEAN(OptionE.2)
+    (
+        VAR.AddWatch gDebugAuthMode
+        DIALOG.END
+        LOCAL &yes
+        DIALOG.MESSAGE "Please note, this is one-time programmable, ADKP key password shall be programmed before updating debug auth mode."
+        v gProgramAttributes = 8
+        v gRunExampleTest = 1
+        v write_attr=1
+        VAR.NEWLOCAL int \debug_auth
+        LOCAL &yes
+        DIALOG.YESNO "Do you want to proceed and directly check if debug authorization was enabled?"
+        ENTRY &yes
+        IF &yes
+        (
+            go
+            wait 2s
+            break
+            v \debug_auth = ((testStatus >> 0x4) & 0x1)
+            VAR.IF ( (gsrvResponse == 1436927333) && (1 == \debug_auth) )
+            (
+                DIALOG.MESSAGE "Debug Authorization mode already set to Challenge Response."
+            )
+            VAR.IF (gsrvResponse == 2857739574)
+            (
+                DIALOG.MESSAGE "There was an error HSE_SRV_RSP_NOT_ALLOWED while programming Debug Auth attribute.Please make sure that ADKP is programmed."
+            )
+            VAR.IF ( (gsrvResponse == 1436920371) && (1 == \debug_auth) )
+            (
+                DIALOG.MESSAGE "Debug Authorization mode changed to Challenge-Response."
+                VAR.PRINT "Debug authorization mode is " gDebugAuthMode
+            )
+            VAR.IF ( (testStatus&0x20) != 0x20 )
+            (
+                DIALOG.MESSAGE "ADKP not programmed, please program ADKP key first."
+            )
+            ELSE
+            (
+                ;do nothing
+            )
+        )
+        ELSE
+        (
+            &continue_test = 0
+        )
+
+    )
+    ELSE IF DIALOG.BOOLEAN(OptionE.3)
+    (
+        DIALOG.END
+        cd.do advance_LC.cmm
+        var.if (\advanceLC_requested == 1)
+        (
+            LOCAL &yes
+            DIALOG.YESNO "Do you want to proceed and directly check if Life Cycle is advanced?"
+            ENTRY &yes
+            IF &yes
+            (
+                go
+                wait 2s
+                break
+                var.if ((testStatus & 0x20) != 0x20)
+                (
+                    DIALOG.MESSAGE "Life Cycle cannot be advanced as ADKP is not programmed."
+                )
+                VAR.IF ( (testStatus & 0x2) != 0x2 )
+                (
+                    DIALOG.MESSAGE "Life Cycle cannot be advanced as Key catalog is not formatted."
+                )
+                var.if ( (gsrvResponse == 1436920371) && ((testStatus & 0x22) == 0x22) )
+                (
+                    DIALOG.OK "LC advance will be reflected in software immediately and in hardware after POR which will be issued next."
+                    var.if ((testStatus & 0x40) == 0x40)
+                    (
+                        DIALOG.MESSAGE "Life Cycle is IN_FIELD."
+                    )
+                    var.if ((testStatus & 0x4000) == 0x4000)
+                    (
+                        DIALOG.MESSAGE "Life Cycle is OEM_PROD."
+                    )
+                    ;issue POR
+                    D.S SD:0x402ac400 %Long 0x1
+                )
+            )
+            else
+            (
+                &continue_test = 0
+            )
+        )
+        else
+            ENDDO
+    )
+    ELSE IF DIALOG.BOOLEAN(OptionE.4)
+    (
+        DIALOG.END
+        v gProgramAttributes = 64
+        v gRunExampleTest = 1
+        v write_attr=1
+        cd.do mu_attribute.cmm
+        LOCAL &yes
+        DIALOG.YESNO "Do you want to check the output directly?"
+        ENTRY &yes
+        IF &yes
+        (
+            go
+            wait 2s
+            break
+            VAR.IF (gsrvResponse == 1436920406)
+            (
+                DIALOG.MESSAGE "There was an error HSE_SRV_RSP_INVALID_PARAM while programming MU attribute.Verify the HSE request parameters and try again."
+            )
+            VAR.IF (gsrvResponse == 1436920371)
+            (
+                DIALOG.MESSAGE "MU attribute was programmed successfully."
+            )
+            Var.IF ( ( 0xA5 == ReadMu1Config) && ( 1436927333 == gsrvResponse ) )
+            (
+                DIALOG.OK "MU1 is already activated."
+            )
+            Var.IF ( ( 0x5A == ReadMu1Config) && ( 1436927333 == gsrvResponse ) )
+            (
+                DIALOG.OK "MU1 is already deactivated."
+            )
+        )
+        else
+        (
+            &continue_test = 0
+        )
+    )
+    ELSE IF DIALOG.BOOLEAN(OptionE.5)
+    (
+        DIALOG.END
+        v gProgramAttributes = 128
+        v gRunExampleTest = 1
+        v write_attr = 1
+        DIALOG.OK "Warning: This is one-time programmable only and operation cannot be reversed."
+        LOCAL &yes
+        DIALOG.YESNO "Do you want to set enable ADKm bit?"
+        ENTRY &yes
+        IF &yes
+        (
+            v SetEnableAdkmBit = 1
+        )
+        else
+        (
+            v SetEnableAdkmBit = 0
+        )
+        LOCAL &yes
+        DIALOG.YESNO "Do you want to set StartAtUser bit?"
+        ENTRY &yes
+        IF &yes
+        (
+            v StartAsUserBit = 1
+        )
+        else
+        (
+            v StartAsUserBit = 0
+        )
+        VAR.IF ((StartAsUserBit == 0) && (SetEnableAdkmBit == 0))
+        (
+            DIALOG.OK "Invalid Parameter. Please try again."
+        )
+        ELSE
+        (
+            LOCAL &yes
+            DIALOG.YESNO "Do you want to proceed and directly check if enableADKm and StartasUserbit is configured?"
+            ENTRY &yes
+            IF &yes
+            (
+                go
+                wait 1.s
+                break
+
+                VAR.IF ((testStatus & 0x20) == 0x20)
+                (
+                    DIALOG.MESSAGE "ADKP key is programmed,HSE security policies cannot be extended."
+                )
+                VAR.IF ( (gsrvResponse == 1436920371) && ((testStatus & 0x1000) == 0x1000) && (1 == GetStartAsUserBit) )
+                (
+                    DIALOG.MESSAGE " HSE Security Policies was extended successfully, StartAtUser bit set to 1."
+                    VAR.AddWatch %Hex GetStartAsUserBit
+                )
+                VAR.IF ( (gsrvResponse == 1436920371) && ((testStatus & 0x1000) == 0x1000) && (0 == GetStartAsUserBit) )
+                (
+                    DIALOG.MESSAGE " HSE Security Policies was extended successfully, StartAtUser bit set to 0."
+                    VAR.AddWatch %Hex GetStartAsUserBit
+                )
+            )
+            ELSE
+            (
+                &continue_test = 0
+            )
+        )
+    )
+    ELSE IF DIALOG.BOOLEAN(OptionE.6)
+    (
+        DIALOG.END
+        DIALOG.MESSAGE "This is one-time programmable and the action cannot be reverted."
+
+        v gProgramAttributes = 32
+        v gRunExampleTest = 1
+        v write_attr=1
+        LOCAL &yes
+        DIALOG.YESNO "Do you want to proceed and directly check if Boot Authorization is enabled?"
+        ENTRY &yes
+        IF &yes
+        (
+            go
+            wait 2s
+            break
+            VAR.NewLocal char \local_var = ((testStatus >> 7) & 0x1)
+            VAR.IF ( (gsrvResponse == 1436927333) && (\local_var == 1) )
+            (
+                DIALOG.MESSAGE "Boot Authorization is already enabled."
+            )
+            VAR.IF ((testStatus & 0x20) != 0x20)
+            (
+                DIALOG.MESSAGE "ADKP not prorammed, please program ADKP first and then retry."
+            )
+            VAR.IF ((gsrvResponse == 1436920371) && (\local_var == 1))
+            (
+                DIALOG.MESSAGE "Boot Authorization is enabled, POR will be issued next."
+                D.S SD:0x402ac400 %Long 0x1
+            )
+        )
+        ELSE
+        (
+            &continue_test = 0
+        )
+    )
+    ELSE
+    (
+        DIALOG.OK "Please select a valid option."
+        DIALOG.END
+        goto write_attr
+    )
+
+ENDDO

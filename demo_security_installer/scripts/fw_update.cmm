@@ -1,0 +1,148 @@
+;=========================================================================
+; System settings
+;=========================================================================
+LOCAL &OTA_E_image &ota_e_fw_update &fw_version_reserved_val &FW_UPDATE_SUCCESS &fw_mode_selection
+
+&OTA_E_image = 0
+&ota_e_fw_update = 0
+&FW_UPDATE_SUCCESS = 8
+CD.DO attach_core_m7_0.cmm
+
+;=========================================================================
+; RAM initialization
+;=========================================================================
+;ME all Clocks enable
+D.S SD:0x402DC330 %LE %LONG 0xFFFFFFFF  ;  MC_ME.MC_ME_PRTN1_COFB0_CLKEN.R
+D.S SD:0x402DC334 %LE %LONG 0xFFFFFFFF  ;  MC_ME.MC_ME_PRTN1_COFB1_CLKEN.R
+D.S SD:0x402DC304 %LE %LONG 0x00000001  ;  MC_ME.MC_ME_PRTN0_PUPD.R
+D.S SD:0x402DC000 %LE %LONG 0x00005AF0  ;  MC_ME.MC_ME_CTL_KEY.R
+D.S SD:0x402DC000 %LE %LONG 0x0000A50F  ;  MC_ME.MC_ME_CTL_KEY.R
+
+wait 0.25s
+
+TrOnchip.Set CORERESET OFF
+
+FLASH.RESet
+FLASH.Create 1. 0x00400000--0x0047FFFF 0x2000 TARGET long;Full Flash erase
+FLASH.TARGET 0x21000000 0x21002000 0x1000 ~~/demo/arm/flash/long/&FlashDriver
+Data.load.binary "~~/demo/arm/flash/long/&FlashDriver" 0x21000000
+
+;for securing ivt and backup ivt's in case ivt authentication is enabled.
+FLASH.ChangeType 0x00400000--0x0041FFFF NOP
+FLASH.ChangeType 0x00450000--0x0047FFFF NOP
+
+Flash.ReProgram ALL /Erase
+
+;HSE FW pink image programming
+data.load.binary "..\..\hse\*.*" &NEW_HSE_FW_ADDRESS
+&OTA_E_image = Data.byte(&NEW_HSE_FW_ADDRESS)
+
+FLASH.ReProgram OFF
+Data.Set SD:0x21000000++0x1FFF %LE %Quad 0x0
+
+Var.If (&OTA_E_image == 0xDB)
+(
+    DIALOG.MESSAGE "You have loaded encrypted OTA-E HSE FW pink image at BLOCK 0. After FW update is successful, power on reset will be issued."
+    &ota_e_fw_update = 1
+)
+Var.If (&OTA_E_image == 0xDA)
+(
+    &fw_version_reserved_val = Data.byte(SD:0x2100DA00)   ;HSE_FW_VERSION fixed address for version from linker map file
+    Var.If (&fw_version_reserved_val == 1)
+    (
+        DIALOG.OK "OTA-Enable to OTA-Disable firmware update is not allowed."
+        goto load_symbols
+        ENDDO
+    )
+    else
+    (
+        DIALOG.MESSAGE "Encrypted HSE FW loaded at BLOCK 0, FW update process started."
+    )
+)
+Var.If (&OTA_E_image == 0xFF)
+(
+    DIALOG.MESSAGE "HSE FW pink image not flashed."
+    goto load_symbols
+    ENDDO
+)
+IF ("&CONFIG"=="GHS")
+(
+    IF OS.FILE.EXIST(..\Projects\GHS\demo_app\bin\demo_app.elf)==TRUE()
+        data.load.elf "..\Projects\GHS\demo_app\bin\demo_app.elf" /nocode
+    ELSE
+        DIALOG.OK "Symbols not found please build the demo app GHS project."
+)
+ELSE
+(
+    IF OS.FILE.EXIST(..\Projects\S32DS\demo_app\S32K3xx\bin\&SOC_ID\S32K3XX_demo_app.elf)==TRUE()
+        data.load.elf "..\Projects\S32DS\demo_app\S32K3xx\bin\&SOC_ID\S32K3XX_demo_app.elf" /nocode
+    ELSE
+        DIALOG.OK "Symbols not found please build the demo app S32DS project."
+)
+
+v fwudpate_only = 1
+v gRunExampleTest = 4
+v \local_test = 0
+LOCAL &yes
+DIALOG.YESNO "Do you want to proceed and directly check if FW update is successful?"
+ENTRY &yes
+IF &yes
+(
+    Var.If (selected_mode == &ONE_SHOT)
+    (
+        go
+        wait 10s
+        break
+    )
+    Var.If (selected_mode == &STREAMING)
+    (
+        go
+        wait 30s
+        break
+    )
+
+    ;&teststatus = (Data.byte(SD:0x2100DA20))
+    v \local_test = (( testStatus & &FW_UPDATE_SUCCESS ) >> 3)
+    VAR.IF ( 1 == \local_test )
+    (
+        Var.AddWatch %HEX fwversion
+        var.if (&ota_e_fw_update == 1)
+        (
+            DIALOG.MESSAGE "Firmware update successful, FW version will be updated after passive block is activated."
+        )
+        else
+        (
+            DIALOG.MESSAGE "Firmware update successful, FW version before and after update is shown on Watch Window."
+        )
+    )
+    ELSE
+    (
+        DIALOG.MESSAGE "Firmware update not successful."
+    )
+)
+else
+(
+    &continue_test = 0
+)
+
+ENDDO
+
+
+
+load_symbols:
+IF ("&CONFIG"=="GHS")
+(
+    IF OS.FILE.EXIST(..\Projects\GHS\demo_app\bin\demo_app.elf)==TRUE()
+        data.load.elf "..\Projects\GHS\demo_app\bin\demo_app.elf" /nocode
+    ELSE
+        DIALOG.OK "Symbols not found please build the demo app GHS project."
+)
+ELSE
+(
+    IF OS.FILE.EXIST(..\Projects\S32DS\demo_app\S32K3xx\bin\&SOC_ID\S32K3XX_demo_app.elf)==TRUE()
+        data.load.elf "..\Projects\S32DS\demo_app\S32K3xx\bin\&SOC_ID\S32K3XX_demo_app.elf" /nocode
+    ELSE
+        DIALOG.OK "Symbols not found please build the demo app S32DS project."
+)
+
+ENDDO

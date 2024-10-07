@@ -1,0 +1,67 @@
+;the script prompts user for selecting attribute to be either read
+
+
+set_path:
+DIALOG
+(
+    HEADER "Binary path for S32DS project"
+    POS 0. 1. 20. 1.
+    LINE "Select: "
+    POS 6. 2. 10. 1.
+    OptionG.1: CHOOSEBOX "S32K3x0" ""
+    POS 6. 3. 10. 1.
+    OptionG.2: CHOOSEBOX "S32K3x1" " "
+    POS 6. 4. 10. 1.
+    OptionG.3: CHOOSEBOX "S32K3x2" " "
+    POS 6. 5. 10. 1.
+    OptionG.4: CHOOSEBOX "S32K3x4" " "
+    POS 6. 6. 10. 1.
+    OptionG.5: CHOOSEBOX "S32K3x8" " "
+
+    POS 6. 8. 7. 1.
+    DEFBUTTON "OK" "CONTinue"
+    POS 6. 9. 7. 1.
+    BUTTON    "CANCEL" "GOTO cancel"
+    
+    CLOSE "GOTO cancel"
+)
+
+start:
+    STOP
+    GOTO dialog_ok_2
+    DEFBUTTON "OK" "Continue"
+
+cancel:
+    DIALOG.END
+    ENDDO
+    STOP
+
+dialog_ok_2:
+    IF DIALOG.BOOLEAN(OptionG.1)
+    (
+        &BIN_PATH = "S32K3x0_demo_app"
+    )
+    ELSE IF DIALOG.BOOLEAN(OptionG.2)
+    (
+        &BIN_PATH = "S32K3x1_demo_app"
+    )
+    ELSE IF DIALOG.BOOLEAN(OptionG.3)
+    (
+        &BIN_PATH = "S32K3x2_demo_app"
+    )
+    ELSE IF DIALOG.BOOLEAN(OptionG.4)
+    (
+        &BIN_PATH = "S32K3x4_demo_app"
+    )
+    ELSE IF DIALOG.BOOLEAN(OptionG.5)
+    (   
+        &BIN_PATH = "S32K3x8_demo_app"
+    )
+    ELSE
+    (
+        DIALOG.OK "Please select a valid option."
+        DIALOG.END
+        goto set_path
+    )
+    DIALOG.END
+ENDDO

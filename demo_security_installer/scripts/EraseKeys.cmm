@@ -1,0 +1,31 @@
+cd.do attach_core_m7_0.cmm
+
+Var.DelWatch testStatus
+v gRunExampleTest = 32
+Var.NEWLOCAL int \local_test
+LOCAL &yes
+DIALOG.YESNO "Do you want to proceed and directly check the output of NVM keys erased request?"
+ENTRY &yes
+//user wants to debug the code, do not proceed from script
+IF &yes
+(
+    go
+    wait 2s
+    break
+    v \local_test = (testStatus>>9)&0x1
+    VAR.IF (\local_test == 1)
+    (
+        Var.AddWatch testStatus
+        DIALOG.MESSAGE "NVM data was erased successfully. please check test status in watch window."
+        v allTestExecuted=1
+        go
+        wait 1s
+        break
+        ;cd.do Issue_FunctionalReset_MC_ME.cmm
+    )
+    ELSE
+    (
+        DIALOG.MESSAGE "There was an error while erasing NVM data, please check the input and try again."
+    )
+)
+ENDDO

@@ -1,0 +1,44 @@
+
+PRIVATE &ppd
+&ppd=OS.PSD()
+
+;ENTRY &teststatus
+GLOBAL &SHE_SERVICES_SUCCESSFUL
+Var.NewLocal char \local_test
+;VAR.Addwatch testStatus
+;Var.Addwatch gProgramAttributes
+
+&SHE_SERVICES_SUCCESSFUL = 0x00010000
+v gRunExampleTest = 1
+v gProgramAttributes=0x800
+
+LOCAL &yes
+DIALOG.YESNO "Do you want to proceed and directly check if all she command app services is successfully executed?"
+ENTRY &yes
+
+IF &yes
+(
+    go
+    wait 4s
+    break
+    v \local_test = (testStatus>>16)&0x01
+    VAR.IF ( 1 == ((testStatus>>23)&0x01))
+    (
+        DIALOG.MESSAGE "SHE SERVICES NOT SUPPORTED"
+    )
+    ELSE
+    (
+        VAR.IF ( 1 == \local_test )
+        (
+            DIALOG.MESSAGE "All SHE Command App Services were executed successfully."
+        )
+        ELSE
+        (
+            DIALOG.MESSAGE "All SHE Command App Services were not executed successfully"
+        )
+    )
+)
+ELSE
+    &continue_test = 0
+
+ENDDO

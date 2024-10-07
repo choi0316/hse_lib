@@ -1,0 +1,73 @@
+SYStem.Option TRST OFF
+SYStem.Option EnReset OFF
+
+IF ("&app_device"=="")
+(
+    ;Get Device Information
+    DO JTAG_READ_IDCODE.cmm
+    ENTRY &IDCODE
+
+    GOSUB IdentifyVariant &IDCODE
+)
+
+SYStem.CPU &app_device
+
+; system.config debugporttype swd
+
+SYSTEM.JTAGclock 10Mhz
+
+SYSTEM.Attach
+
+wait 500ms
+
+break
+
+ENDDO
+
+IdentifyVariant:
+(
+    ENTRY &IDCODE
+    IF &IDCODE==0X0996C01D
+    (
+        &app_device="S32K311-M7"
+        &SOC_ID="S32K3x1"
+        &FlashDriver="s32k3x1.bin"
+    )
+    ELSE IF &IDCODE==0X0996801D
+    (
+        &app_device="S32K312-M7"
+        &SOC_ID="S32K3x2"
+        &FlashDriver="s32k3x2.bin"
+    )
+    ELSE IF &IDCODE==0X0996401D
+    (
+        &app_device="S32K342-M7"
+        &SOC_ID="S32K3x2"
+        &FlashDriver="s32k3x2.bin"
+    )
+    ELSE IF &IDCODE==0X0996001D
+    (
+        &app_device="S32K344-M7"
+        &SOC_ID="S32K3x4"
+        &FlashDriver="s32k3x4.bin"
+    )
+    ELSE IF &IDCODE==0x0995601D
+    (
+        &app_device="S32K396-M7"
+        &SOC_ID="S32K3x6"
+        &FlashDriver="s32k3ex6.bin"
+	)
+	ELSE IF &IDCODE==0x0995E01D
+	(
+		&app_device="S32K358-M7"
+		&SOC_ID="S32K358"
+        &FlashDriver="s32k3x8.bin"
+    )
+	ELSE IF &IDCODE==0x0995A01D
+	(
+		&app_device="S32K388-M7"
+		&SOC_ID="S32K388"
+        &FlashDriver="s32k3x8.bin"
+    )
+    RETURN
+)

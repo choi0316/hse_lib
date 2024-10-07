@@ -1,0 +1,113 @@
+cd.do attach_core_m7_0.cmm
+ENTRY &OTA_E_image
+;check if fw is already installed or not, if installed then terminate this request
+LOCAL &fw_install_status
+Var.NEWLOCAL char \init_status_byte
+
+&fw_install_status=Data.byte(SD:0x4038C107)
+
+Var.Assign \init_status_byte=(&fw_install_status)&0x1
+Var.IF (\init_status_byte == 1)
+(
+    DIALOG.OK "HSE FW is already installed, hence this request is terminated"
+    ENDDO
+)
+
+cd.do system_setup.cmm
+
+GLOBAL &backup_ivt_marker
+
+;case when ivt authentication is enabled, backup ivt is saved.
+&backup_ivt_marker = Data.long(SD:0x420000)
+
+Var.if ( 0x5AA55AA5 == &backup_ivt_marker )
+    data.save.binary ..\images\backup_ivt.bin 0x420000++0xFF
+
+FLASH.RESet
+
+FLASH.Create 1. 0x00400000--0x0047FFFF 0x2000 TARGET long;Block 0
+FLASH.TARGET 0x21000000 0x21002000 0x1000 ~~/demo/arm/flash/long/&FlashDriver
+Data.load.binary "~~/demo/arm/flash/long/&FlashDriver" 0x21000000
+
+;case when ivt authentication is enabled, 2 backup ivt's are programmed at below locations
+Var.if ( 0x5AA55AA5 == &backup_ivt_marker )
+    FLASH.ChangeType 0x00420000--0x423FFF NOP
+
+;do not remove sbaf in case of k312 device
+FLASH.ChangeType 0x00474000--0x0047FFFF NOP
+
+Flash.ReProgram ALL /Erase
+
+;IVT programming
+Var.if ( 0x5AA55AA5 == &backup_ivt_marker )
+    data.load.binary "..\images\backup_ivt.bin" 0x00400000++0xFF
+else
+    data.load.binary "..\images\ivt.bin" 0x00400000++0xEF
+
+
+;Program XRDC Configuration provided by User
+;data.load.binary "..\images\S32K3xx_flash_XRDC.bin" 0x0041E100++0x100
+
+
+;HSE FW pink image programming
+data.load.binary "..\..\hse\*.*" 0x00422000
+&OTA_E_image = Data.byte(SD:0x00422000)
+Var.IF ( &OTA_E_image == 0xDB)
+(
+    Dialog.YESNO "You have chosen ABSWAP HSE FW image for installation. Do you want to continue?"
+    ENTRY &yes
+    IF &yes
+    (
+        ;nothing to do
+    )
+    ELSE
+    (
+        DIALOG.OK "Please choose OTA-D image"
+        data.load.binary "..\..\hse\*.*" 0x00422000
+    )
+)
+Var.if (&OTA_E_image == 0xFF)
+(
+    DIALOG.OK "HSE image was not selected, please retry."
+    v \hse_selected = 0
+    ENDDO
+)
+
+IF ("&CONFIG"=="GHS")
+(
+    IF ("&fwtype"=="STANDARD")
+    (
+        ;secure boot app, if elf present, then load that else load srec
+        IF OS.FILE.EXIST(..\Projects\GHS\SecureBootApp\bin\secure_boot_app.elf)==TRUE()
+            data.load.elf "..\Projects\GHS\SecureBootApp\bin\secure_boot_app.elf"
+        ELSE
+            data.load.s1record "..\Projects\GHS\SecureBootApp\bin\secure_boot_app.run"
+    )
+    ;demo app, if elf present then load that else load srec
+    IF OS.FILE.EXIST(..\Projects\GHS\demo_app\bin\demo_app.elf)==TRUE()
+        data.load.elf "..\Projects\GHS\demo_app\bin\demo_app.elf"
+    ELSE
+        data.load.s1record "..\Projects\GHS\demo_app\bin\demo_app.run"
+)
+ELSE
+(
+    IF ("&fwtype"=="STANDARD")
+    (
+        ;secure boot app, if elf present then load that else load srec
+        IF OS.FILE.EXIST(..\Projects\S32DS\SecureBootApp\Debug_FLASH\secure_boot_app.elf)==TRUE()
+            data.load.elf "..\Projects\S32DS\SecureBootApp\Debug_FLASH\secure_boot_app.elf"
+        ELSE
+            data.load.s1record "..\Projects\S32DS\SecureBootApp\Debug_FLASH\secure_boot_app.srec"
+    )
+
+    ;demo app, if elf present then load that else load srec
+    IF OS.FILE.EXIST(..\Projects\S32DS\demo_app\S32K3xx\bin\&SOC_ID\S32K3XX_demo_app.elf)==TRUE()
+        data.load.elf "..\Projects\S32DS\demo_app\S32K3xx\bin\&SOC_ID\S32K3XX_demo_app.elf"
+    ELSE
+        data.load.s1record "..\Projects\S32DS\demo_app\S32K3xx\bin\&SOC_ID\S32K3XX_demo_app.srec"
+
+)
+
+FLASH.ReProgram OFF
+Data.Set SD:0x21000000++0x1FFF %LE %Quad 0x0
+ENDDO

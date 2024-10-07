@@ -1,0 +1,55 @@
+//@file      menu.cmm
+//@copyright 2019,NXP Semiconductors Confidential Proprietary, All Rights Reserved.
+//@version   0.2
+
+PRIVATE &ppd
+&ppd=OS.PSD()
+
+
+DIALOG
+(
+    HEADER "HSE Attributes"
+    POS 0. 1. 24. 1.
+    LINE "Select configuration: "
+    POS 5. 2. 20. 1.
+    OptionD.1: CHOOSEBOX  "Read Attribute" " "
+    POS 5. 3. 20. 1.
+    OptionD.2: CHOOSEBOX  "Write Attibute" " "
+
+    POS 6. 6. 10. 1.
+    DEFBUTTON "OK" "CONTinue"
+    POS 6. 7. 10. 1.
+    BUTTON    "Cancel" "GOTO cancel"
+
+    CLOSE "GOTO cancel"
+)
+
+start:
+    STOP
+    GOTO dialog_ok_1
+    DEFBUTTON "OK" "Continue"
+
+cancel:
+    DIALOG.END
+    STOP
+    ENDDO
+
+
+dialog_ok_1:
+    IF DIALOG.BOOLEAN(OptionD.1)
+    (
+        DIALOG.END
+        do attribute_read.cmm
+    )
+    ELSE IF DIALOG.BOOLEAN(OptionD.2)
+    (
+        DIALOG.END
+        do attribute_write.cmm
+    )
+    ELSE
+    (
+        DIALOG.OK "No valid option selected."
+        DIALOG.END
+    )
+
+ENDDO

@@ -1,0 +1,103 @@
+GLOBAL &AESCMAC &AESGMAC &HMAC &ECC &RSA &ADVANCED_SECURE_BOOT
+&AESCMAC = 0
+&AESGMAC = 1
+&HMAC = 2
+&ECC = 3
+&RSA = 4
+
+&ADVANCED_SECURE_BOOT = 2
+secure_boot_auth_options:
+
+DIALOG
+(
+    HEADER "ASB Options"
+    POS 1. 1. 20. 1.
+    LINE "AUTHENTICATION TYPES:"
+
+    POS 3. 2. 10. 1.
+    OptionI.1: CHECKBOX "AES-CMAC" " "
+    POS 3. 3. 10. 1.
+    OptionI.2: CHECKBOX "AES-GMAC" " "
+    POS 3. 4. 10. 1.
+    OptionI.3: CHECKBOX "HMAC" ""
+    POS 3. 5. 10. 1.
+    OptionI.4: CHECKBOX "ECC" ""
+    POS 3. 6. 10. 1.
+    OptionI.5: CHECKBOX "RSA" ""
+
+    POS 5. 8. 10. 1.
+    DEFBUTTON "OK" "CONTinue"
+    POS 5. 9. 10. 1.
+    BUTTON    "Cancel" "GOTO cancel"
+
+    CLOSE "GOTO cancel"
+)
+
+DIALOG.SET OptionI.1 TRUE()
+DIALOG.SET OptionI.2 TRUE()
+DIALOG.SET OptionI.3 TRUE()
+DIALOG.SET OptionI.4 TRUE()
+DIALOG.SET OptionI.5 TRUE()
+
+start:
+    STOP
+    GOTO secure_boot_option_dialog
+    DEFBUTTON "OK" "Continue"
+
+cancel:
+    DIALOG.END
+    STOP
+    ENDDO
+
+secure_boot_option_dialog:
+
+    IF DIALOG.BOOLEAN(OptionI.1)
+    (
+        v authentication_type[&AESCMAC] = 1
+    )
+    ELSE
+    (
+        v authentication_type[&AESCMAC] = 0
+    )
+
+    IF DIALOG.BOOLEAN(OptionI.2)
+    (
+        v authentication_type[&AESGMAC] = 1
+    )
+    ELSE
+    (
+        v authentication_type[&AESGMAC] = 0
+    )
+
+    IF DIALOG.BOOLEAN(OptionI.3)
+    (
+        v authentication_type[&HMAC] = 1
+    )
+    ELSE
+    (
+        v authentication_type[&HMAC] = 0
+    )
+    
+    IF DIALOG.BOOLEAN(OptionI.4)
+    (
+        v authentication_type[&ECC] = 1
+    )
+    ELSE
+    (
+        v authentication_type[&ECC] = 0
+    )
+    
+    IF DIALOG.BOOLEAN(OptionI.5)
+    (
+        v authentication_type[&RSA] = 1
+    )
+    ELSE
+    (
+        v authentication_type[&RSA] = 0
+    )
+
+    v gRunSecureBootType = &ADVANCED_SECURE_BOOT
+
+    DIALOG.END
+
+ENDDO

@@ -1,0 +1,105 @@
+go
+wait 250ms
+break
+secure_boot_options:
+
+DIALOG
+(
+    HEADER "Boot Options"
+    POS 3. 1. 20. 1.
+    LINE "Further Options"
+
+    POS 3. 2. 25. 1.
+    OptionZ.1: CHOOSEBOX "Basic Secure Boot" " "
+    POS 3. 3. 25. 1.
+    OptionZ.2: CHOOSEBOX "Advanced Secure Boot" ""
+    POS 3. 4. 25. 1.
+    OptionZ.3: CHOOSEBOX "SHE based Advanced SB" ""
+    
+    POS 8. 7. 10. 1.
+    DEFBUTTON "OK" "CONTinue"
+    POS 8. 8. 10. 1.
+    BUTTON    "Cancel" "GOTO cancel"
+
+    CLOSE "GOTO cancel"
+)
+
+start:
+    STOP
+    GOTO secure_boot_dialog
+    DEFBUTTON "OK" "Continue"
+
+cancel:
+    DIALOG.END
+    STOP
+    ENDDO
+
+secure_boot_dialog:
+    v gRunExampleTest = 8
+    IF DIALOG.BOOLEAN(OptionZ.1)
+    (
+        DIALOG.END
+        DIALOG.MESSAGE "Please make sure ADKP is programmed before configuring device for Basic Secure Boot."
+        v gRunSecureBootType = 1
+        goto secure_boot
+    )
+    ELSE IF DIALOG.BOOLEAN(OptionZ.2)
+    (
+        DIALOG.END
+        CD.DO secure_boot_options.cmm
+        goto secure_boot
+    )
+    ELSE IF DIALOG.BOOLEAN(OptionZ.3)
+    (
+        DIALOG.END
+        v gRunSecureBootType = 3
+        goto secure_boot
+    )
+    ELSE
+    (
+        DIALOG.OK "Please select a valid option."
+        DIALOG.END
+        goto secure_boot_options
+    )
+ENDDO
+
+secure_boot:
+    LOCAL &yes
+    DIALOG.YESNO "Do you want to proceed and directly check if Secure boot is successful?"
+    ENTRY &yes
+    IF &yes
+    (
+        VAR.NEWLOCAL int \local_test
+        go
+        wait 250ms
+        break
+        VAR.IF ( (KeyReadSrvResponse == 1436920371) && (gRunSecureBootType == 1) )
+        (
+            DIALOG.Message "ADKP is programmed, Basic secure boot configuration started, please wait."
+        )
+        var.if ( ((testStatus & 0x20) != 0x20) && (gRunSecureBootType == 1))
+        (
+            DIALOG.Message "ADKP is not programmed, please program ADKP first, secure boot configuration not done."
+        )
+        else
+        (
+            go
+            wait 3s
+            break
+            v \local_test = ((testStatus >> 8)&0x1)
+            VAR.IF ( 1 == \local_test )
+            (
+                DIALOG.MESSAGE "Secure boot enabled, Function reset will be issued next."
+                do Issue_FunctionalReset_MC_ME.cmm
+            )
+            ELSE
+            (
+                DIALOG.MESSAGE "Secure boot configuration not complete, please try again."
+            )
+        )
+    )
+    else
+    (
+        &continue_test = 0
+    )
+ENDDO

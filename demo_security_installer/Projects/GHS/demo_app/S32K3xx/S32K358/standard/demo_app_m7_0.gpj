@@ -1,0 +1,100 @@
+#!gbuild
+macro HSE_VARIANT="HSE_B"
+primaryTarget=arm_standalone.tgt
+#component top_level_project
+[Program]
+	-Odebug
+	-object_dir=objs
+	:outputDir=objs
+	:binDir=..\..\..\bin
+	-object_dir=${%option_value(-object_dir)}
+	{optgroup=GhsCommonOptions} -o demo_app.elf
+	-Onone
+	-I../../../../../../../interface
+	-I../../../../../../../interface/config
+	-I../../../../../../../interface/inc_common
+	-I../../../../../../../interface/inc_custom
+	-I../../../../../../../interface/inc_services
+	-I../../../../../../src/demo_app/drivers/dcm_register
+	-I../../../../../../src/demo_app/drivers/flash
+	-I../../../../../../src/demo_app/drivers/mu
+	-I../../../../../../src/demo_app/drivers/nvic
+	-I../../../../../../src/demo_app/drivers/stm
+	-I../../../../../../src/demo_app/framework/host_hse
+	-I../../../../../../src/demo_app/framework/host_hse/hse_b
+	-I../../../../../../src/demo_app/framework/host_crypto_helper
+	-I../../../../../../src/demo_app/framework/host_keymgmt
+	-I../../../../../../src/demo_app/plugins/Base_TS_T40D11M4I0R0/include
+	-I../../../../../../src/demo_app/services/inc
+	-I../../../../../../src/demo_app/services/inc/host_flash/S32K358
+	-I../../../../../../src/demo_app/services/inc/standard
+	-I../../../../../../src/demo_app/services/src/fw_crypto/inc
+	-I../../../../../../src/demo_app/target/m7/include
+	-srec
+	-c99
+	-G
+	-preprocess_assembly_files
+	--no_exceptions
+	-dual_debug
+	--prototype_errors
+	-Wundef
+	-Wimplicit-int
+	-Wshadow
+	-Wtrigraphs
+	-nostartfile
+	--no_commons
+	--incorrect_pragma_warnings
+	-ignore_debug_references
+	-keeptempfiles
+	-DGHS
+	-DAUTOSAR_OS_NOT_USED
+	-cpu=cortexm7
+..\..\..\..\..\..\src\demo_app\target\m7\GHS\ld\standard\demo_app.ld
+..\..\..\..\..\..\src\demo_app\services\src\hse_host_flash.c
+..\..\..\..\..\..\src\demo_app\services\src\hse_demo_app_config.c
+..\..\..\..\..\..\src\demo_app\services\src\hse_b_catalog_formatting.c
+..\..\..\..\..\..\src\demo_app\services\src\standard\hse_fwType_config.c
+..\..\..\..\..\..\src\demo_app\drivers\stm\host_stm.c
+..\..\..\..\..\..\src\demo_app\drivers\dcm_register\hse_dcm_register.c
+..\..\..\..\..\..\src\demo_app\framework\host_crypto_helper\hse_host_utils.c
+..\..\..\..\..\..\src\demo_app\framework\host_crypto_helper\hse_host_sign.c
+..\..\..\..\..\..\src\demo_app\framework\host_crypto_helper\hse_host_rsa_cipher.c
+..\..\..\..\..\..\src\demo_app\framework\host_crypto_helper\hse_host_rng.c
+..\..\..\..\..\..\src\demo_app\framework\host_crypto_helper\hse_host_monotonic_counters.c
+..\..\..\..\..\..\src\demo_app\framework\host_crypto_helper\hse_host_mac.c
+..\..\..\..\..\..\src\demo_app\framework\host_crypto_helper\hse_host_kdf.c
+..\..\..\..\..\..\src\demo_app\framework\host_crypto_helper\hse_host_import_key.c
+..\..\..\..\..\..\src\demo_app\framework\host_crypto_helper\hse_host_hash.c
+..\..\..\..\..\..\src\demo_app\framework\host_crypto_helper\hse_host_format_key_catalogs.c
+..\..\..\..\..\..\src\demo_app\framework\host_crypto_helper\hse_host_ecc.c
+..\..\..\..\..\..\src\demo_app\framework\host_crypto_helper\hse_host_cipher.c
+..\..\..\..\..\..\src\demo_app\framework\host_crypto_helper\hse_host_attrs.c
+..\..\..\..\..\..\src\demo_app\framework\host_crypto_helper\hse_host_aead.c
+..\..\..\..\..\..\src\demo_app\framework\host_crypto_helper\hse_host_cmac_with_counter.c
+..\..\..\..\..\..\src\demo_app\framework\host_keymgmt\hse_keys_allocator.c
+..\..\..\..\..\..\src\demo_app\drivers\flash\GetBaseAddressOfSector.c
+..\..\..\..\..\..\src\demo_app\drivers\flash\GetLock.c
+..\..\..\..\..\..\src\demo_app\drivers\flash\ProgramVerify.c
+..\..\..\..\..\..\src\demo_app\drivers\flash\SetLock.c
+..\..\..\..\..\..\src\demo_app\drivers\flash\BlankCheck.c
+..\..\..\..\..\..\src\demo_app\drivers\flash\ClearAllErrorFlags.c
+..\..\..\..\..\..\src\demo_app\drivers\flash\ClearLock.c
+..\..\..\..\..\..\src\demo_app\drivers\flash\FlashErase.c
+..\..\..\..\..\..\src\demo_app\drivers\flash\FlashInit.c
+..\..\..\..\..\..\src\demo_app\drivers\flash\FlashProgram.c
+..\..\..\..\..\..\src\demo_app\drivers\nvic\nvic.c
+..\..\..\..\..\..\src\demo_app\drivers\mu\hse_mu.c
+..\..\..\..\..\..\src\demo_app\framework\host_hse\hse_host.c
+..\..\..\..\..\..\src\demo_app\target\m7\src\sys_init.c
+..\..\..\..\..\..\src\demo_app\target\m7\GHS\startup\Startup.s
+..\..\..\..\..\..\src\demo_app\target\m7\GHS\startup\Vector_core.s
+..\..\..\..\..\..\src\demo_app\services\src\main.c
+..\..\..\..\..\..\src\demo_app\services\src\monotonic_cnt\hse_monotonic_cnt.c
+..\..\..\..\..\..\src\demo_app\services\src\fw_crypto\cryptographic_services.gpj
+..\..\..\..\..\..\src\demo_app\services\src\secure_boot\secure_boot.gpj
+..\..\..\..\..\..\src\demo_app\services\src\fw_attribute\attribute_programming.gpj
+..\..\..\..\..\..\src\demo_app\services\src\shecommandapp\shecommandapp.gpj
+..\..\..\..\..\..\src\demo_app\services\src\fw_update\standard\hse_fw_update.gpj
+..\..\..\..\..\..\src\demo_app\services\src\common\common.gpj
+..\..\..\..\..\..\src\demo_app\services\src\utest\utest.gpj
+..\..\..\..\..\..\src\demo_app\services\src\sbaf_update\sbaf_update.gpj
